@@ -10,7 +10,8 @@ while cap.isOpened():
         print("Ignoring empty camera frame.")
         # If loading a video, use 'break' instead of 'continue'.
         continue
-    pointer.process(image)
+    image = pointer.process(image)
+    cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
     if cv2.waitKey(5) & 0xFF == 27:
         break
 cap.release()

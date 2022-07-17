@@ -18,6 +18,9 @@ class Vector2D:
             'y': self.y * num,
         })
 
+    def equals(self, vector):
+        return self.x == vector.x and self.y == vector.y
+
 class Vector3D:
     def __init__(self, vector):
         self.x = vector["x"]
@@ -36,17 +39,21 @@ class Vector3D:
             'y': self.y * num,
             'z': self.z * num,
         })
+    
+    def equals(self, vector):
+        return self.x == vector.x and self.y == vector.y and self.z == vector.z
+
 """
 origin=Vector3D({'x': 0, 'y': 0, 'z': 0})
 point=Vector3D({'x': 0, 'y': 0, 'z': 1})
 print(calcAngle(origin, point))
 """
 
-def calcDistance3D(o, p=Vector3D({'x': 0, 'y': 0, 'z': 0})):
-    return np.linalg.norm(np.array([o.x, o.y, o.z])-np.array([p.x, p.y, p.z]))
+def calcDistance3D(o, p=Vector3D({'x': 0, 'y': 0, 'z': 0}), scale=Vector3D({'x': 1, 'y': 1, 'z': 1})):
+    return np.linalg.norm(np.array([o.x*scale.x, o.y*scale.y, o.z*scale.z])-np.array([p.x*scale.x, p.y*scale.y, p.z*scale.z]))
 
-def calcDistance2D(o, p=Vector2D({'x': 0, 'y': 0})):
-    return np.linalg.norm(np.array([o.x, o.y])-np.array([p.x, p.y]))
+def calcDistance2D(o, p=Vector2D({'x': 0, 'y': 0}), scale=Vector3D({'x': 1, 'y': 1, 'z': 1})):
+    return np.linalg.norm(np.array([o.x*scale.x, o.y*scale.y])-np.array([p.x*scale.x, p.y*scale.y]))
 
 def calcVector3D(o, p):
     return Vector3D({
