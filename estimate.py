@@ -1,9 +1,9 @@
 import numpy as np
-from numpy import linalg as LA
 import cv2
 import mediapipe as mp
 
 import vector
+import landmarks
 import screen
 import calibration
 
@@ -38,18 +38,22 @@ class Pointer:
     def __init__(self):
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
+        self.plot = screen.RealtimePlot()
 
         self.calibration = calibration.HandState()
+        self.LandmarkParser = landmarks.LandmarkParser()
         self.screen = None
 
         mp_hands = mp.solutions.hands
         mp_pose = mp.solutions.pose
+
         
         self.hands =  mp_hands.Hands(
             static_image_mode = False,      # 単体の画像かどうか(Falseの場合は入力画像を連続したものとして扱います)。
             max_num_hands = 2,              # 認識する手の最大数。
             model_complexity = 1,           # 手のランドマークモデルの複雑さ(0 or 1)。
-            min_detection_confidence = 0.3, # 検出が成功したと見なされるための最小信頼値(0.0 ~ 1.0)。
+            #min_detection_confidence = 0.3,
+            min_detection_confidence = 0.5, # 検出が成功したと見なされるための最小信頼値(0.0 ~ 1.0)。
             min_tracking_confidence = 0.4   # 前のフレームからランドマークが正常に追跡されたとみなされるための最小信頼度(0.0 ~ 1.0)。
         )
         """
@@ -71,49 +75,81 @@ class Pointer:
 
     def process(self, image):
 
+
+        pointer = landmarks.BothSides()
+
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = adjust(image, 1.7, 30.0)
 
         hands_landmarks = self.hands.process(image)
         pose_landmarks = self.pose.process(image)
+        #return image, pointer
+        if hands_landmarks.multi_hand_landmarks:
+            image = draw_hands_landmarks(image, hands_landmarks)
+
+        results = self.LandmarkParser.update(image, pose_landmarks, hands_landmarks, [1, 2, 4, 5, 8])
+
+        #print(results.eye, results.hands.right)
 
         # Draw the hand annotations on the image.
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        if pose_landmarks.pose_landmarks:
-            image = image
-            image = draw_pose_landmarks(image, pose_landmarks)
-
         #print(hands_landmarks.multi_hand_landmarks)
-        if pose_landmarks.pose_landmarks and hands_landmarks.multi_hand_landmarks:
+        if results.eye: # and results.hands.left and results.hands.right:# and hands_landmarks.multi_hand_landmarks:
 
             # キャリブレーション
-            screen_vertex, state = self.calibration.calcPosition(hands_landmarks, pose_landmarks)
+            screen_vertex, state = self.calibration.calcPosition(results.eye, results.hands)
+            #print(screen_vertex)
             #print(state)
-            
+            #print('{:6>.2f}'.format(left_offset), '{:6>.2f}'.format(right_offset))
             if screen_vertex != None:
                 image = screen.draw_border(image, screen_vertex, (255, 255, 100))
                 if state >= 2:
+                    #self.screen = screen.SpatialPlane(screen_vertex, (screen_offsets['left']+screen_offsets['right'])/2)
                     self.screen = screen.SpatialPlane(screen_vertex)
             elif self.screen != None:
-                image = screen.draw_border(image, self.screen.vertex)
-                mid = vector.calcMiddleVector(pose_landmarks.pose_landmarks.landmark[2], pose_landmarks.pose_landmarks.landmark[5])
-                point0 = screen.SpatialPlane(self.screen.vertex).calcIntersection(mid, vector.calcVector3D(mid, pose_landmarks.pose_landmarks.landmark[19]))
-                point1 = screen.SpatialPlane(self.screen.vertex).calcIntersection(mid, vector.calcVector3D(mid, pose_landmarks.pose_landmarks.landmark[20]))
-                image = screen.draw_point(image, point0)
-                image = screen.draw_point(image, point1, (0, 0, 255))
-            
-            #image = draw_hands_landmarks(image, hands_landmarks)
-        elif self.screen != None:
-            image = screen.draw_border(image, self.screen.vertex)
-            mid = vector.calcMiddleVector(pose_landmarks.pose_landmarks.landmark[2], pose_landmarks.pose_landmarks.landmark[5])
-            point0 = screen.SpatialPlane(self.screen.vertex).calcIntersection(mid, vector.calcVector3D(mid, pose_landmarks.pose_landmarks.landmark[19]))
-            point1 = screen.SpatialPlane(self.screen.vertex).calcIntersection(mid, vector.calcVector3D(mid, pose_landmarks.pose_landmarks.landmark[20]))
-            image = screen.draw_point(image, point0)
-            image = screen.draw_point(image, point1, (0, 0, 255))
-        cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
+                
+                image = screen.draw_border(image, self.screen.getVertex())
+
+                results = self.LandmarkParser.get([5])
+                #print(results.hands.left.landmark[0].x, _results.hands.left.landmark[0].x)
+
+                point = []
+                position = []
+                if results.hands.left:
+                    point_left = self.screen.calcIntersection(results.eye, vector.calcVector3D(results.eye, results.hands.left.landmark[5]))
+                    position_left = screen.calc_position(self.screen.getVertex(), point_left)
+                    #position_left.x = (position_left.x - 0.5) * 0.9 + 0.5
+                    #position_left.y = (position_left.y - 0.5) * 0.9 + 0.5
+                    image = screen.draw_point(image, point_left, (255, 0, 0))
+                    point.append(point_left)
+                    position.append(position_left)
+                    pointer.left = position_left
+                if results.hands.right:
+                    point_right = self.screen.calcIntersection(results.eye, vector.calcVector3D(results.eye, results.hands.right.landmark[5]))
+                    position_right = screen.calc_position(self.screen.getVertex(), point_right)
+                    #position_right.x = (position_right.x - 0.5) * 0.9 + 0.5
+                    #position_right.y = (position_right.y - 0.5) * 0.9 + 0.5
+                    #print(position_0, position_1)
+                    image = screen.draw_point(image, point_right, (0, 0, 255))
+                    point.append(point_right)
+                    position.append(position_right)
+                    pointer.right = position_right
+                #cv2.imshow('Screen', screen.draw_screen(position))
+                #self.plot.update(self.screen.getVertex(), results, point)
+                #self.plot.update(self.screen, pose_landmarks, [point0, point1])
+                #self.plot.update(self.screen, pose_landmarks, pose_landmarks.pose_landmarks.landmark[20], [point1, point1])
+        else:
+            #cv2.imshow('Screen', screen.draw_screen([]))
+            #if self.screen:
+            #    self.plot.update(self.screen.getVertex())
+            if self.screen != None:
+                image = screen.draw_border(image, self.screen.getVertex())
+        #cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
+        
+        return image, pointer
 
 
 def adjustBrightness(image):

@@ -8,15 +8,45 @@ class Vector2D:
 
     def __repr__(self):
         return f"x: {self.x}, y: {self.y}"
+    
+    def get(self, dir):
+        if dir == 'x':
+            return self.x
+        elif dir == 'y':
+            return self.y
+        else:
+            return None
+
+    def set(self, dir, value):
+        if dir == 'x':
+            self.x = value
+        elif dir == 'y':
+            self.y = value
         
     def parseArray(self):
         return np.array([self.x, self.y])
+    
+    def addition(self, v):
+        return Vector2D({
+            'x': self.x + v.x,
+            'y': self.y + v.y,
+        })
 
     def multiply(self, num):
         return Vector2D({
             'x': self.x * num,
             'y': self.y * num,
         })
+
+    def division(self, num):
+        num = 0.00001 if num == 0 else num
+        return Vector2D({
+            'x': self.x / num,
+            'y': self.y / num,
+        })
+
+    def equals(self, vector):
+        return self.x == vector.x and self.y == vector.y
 
 class Vector3D:
     def __init__(self, vector):
@@ -27,8 +57,34 @@ class Vector3D:
     def __repr__(self):
         return f"x: {self.x}, y: {self.y}, z: {self.y}"
 
+    def get(self, dir):
+        if dir == 'x':
+            return self.x
+        elif dir == 'y':
+            return self.y
+        elif dir == 'z':
+            return self.z
+        else:
+            return None
+
+    def set(self, dir, value):
+        if dir == 'x':
+            self.x = value
+        elif dir == 'y':
+            self.y = value
+        elif dir == 'z':
+            self.z = value
+
+
     def parseArray(self):
         return np.array([self.x, self.y, self.z])
+    
+    def addition(self, v):
+        return Vector3D({
+            'x': self.x + v.x,
+            'y': self.y + v.y,
+            'z': self.z + v.z,
+        })
     
     def multiply(self, num):
         return Vector3D({
@@ -36,17 +92,29 @@ class Vector3D:
             'y': self.y * num,
             'z': self.z * num,
         })
+
+    def division(self, num):
+        num = 0.00001 if num == 0 else num
+        return Vector3D({
+            'x': self.x / num,
+            'y': self.y / num,
+            'z': self.z / num,
+        })
+
+    def equals(self, vector):
+        return self.x == vector.x and self.y == vector.y and self.z == vector.z
+
 """
 origin=Vector3D({'x': 0, 'y': 0, 'z': 0})
 point=Vector3D({'x': 0, 'y': 0, 'z': 1})
 print(calcAngle(origin, point))
 """
 
-def calcDistance3D(o, p=Vector3D({'x': 0, 'y': 0, 'z': 0})):
-    return np.linalg.norm(np.array([o.x, o.y, o.z])-np.array([p.x, p.y, p.z]))
+def calcDistance3D(o, p=Vector3D({'x': 0, 'y': 0, 'z': 0}), scale=Vector3D({'x': 1, 'y': 1, 'z': 1})):
+    return np.linalg.norm(np.array([o.x*scale.x, o.y*scale.y, o.z*scale.z])-np.array([p.x*scale.x, p.y*scale.y, p.z*scale.z]))
 
-def calcDistance2D(o, p=Vector2D({'x': 0, 'y': 0})):
-    return np.linalg.norm(np.array([o.x, o.y])-np.array([p.x, p.y]))
+def calcDistance2D(o, p=Vector2D({'x': 0, 'y': 0}), scale=Vector3D({'x': 1, 'y': 1, 'z': 1})):
+    return np.linalg.norm(np.array([o.x*scale.x, o.y*scale.y])-np.array([p.x*scale.x, p.y*scale.y]))
 
 def calcVector3D(o, p):
     return Vector3D({
@@ -134,12 +202,9 @@ class Smoothing3D:
             'z': average[2] + basis[2],
         })
 
-class Average2D:
-    def __init__(self, max, outliers=1):
-        self.outliers = outliers
-        self.min = 1 + outliers*2
-        self.max = self.min if max <= self.min else max
-        print(self.min, self.max)
+class Smoothing2D:
+    def __init__(self, max):
+        self.max = max
         self.vector = np.empty((0,2))
 
     def update(self, vector):
@@ -148,13 +213,9 @@ class Average2D:
             self.vector = np.delete(self.vector, 0, axis=0)
 
     def get(self):
-        if(len(self.vector) <= self.min):
-            return Vector2D({
-                'x': 0,
-                'y': 0,
-            })
-        sort_array = np.sort(self.vector, axis=0)[self.outliers:-self.outliers, :] if self.outliers != 0 else self.vector
-        average = np.average(sort_array, axis=0)
+        if(len(self.vector) <= 0):
+            return None
+        average = np.average(self.vector, axis=0)
         return Vector2D({
             'x': average[0],
             'y': average[1],
