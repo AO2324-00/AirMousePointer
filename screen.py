@@ -13,15 +13,18 @@ v = vector.Vector3D({'x': v0.x-v1.x, 'y': v0.y-v1.y, 'z': v0.z-v1.z})
 def calc_vertex(v, p0, p1):
     c0 = vector.Vector3D({'x': p0.x, 'y': p0.y, 'z': (p0.z*4 + p1.z*1)/5}) 
     c2 = vector.Vector3D({'x': p1.x, 'y': p1.y, 'z': (p1.z*4 + p0.z*1)/5}) 
+    c0 = p0
+    c2 = p1
     c1 = vector.calcCornerVector(c0, c2, v)
     c3 = vector.calcCornerVector(c2, c0, v)
     return [c0, c1, c2, c3]
 
 def calc_position(screen_vertex, point):
     #print(point)
-    vertex = [screen_vertex[3], screen_vertex[2], screen_vertex[1], screen_vertex[0]]
+    vertex = [screen_vertex[0], screen_vertex[1], screen_vertex[2], screen_vertex[3]]
     if screen_vertex[0].y > screen_vertex[1].y:
-        vertex = [screen_vertex[2], screen_vertex[3], screen_vertex[0], screen_vertex[1]]
+        #vertex = [screen_vertex[2], screen_vertex[3], screen_vertex[0], screen_vertex[1]]
+        vertex = [screen_vertex[1], screen_vertex[0], screen_vertex[3], screen_vertex[2]]
     vector_X = vector.calcVector3D(vertex[0], vertex[3])
     vector_Y = vector.calcVector3D(vertex[0], vertex[1])
     x = vector.calcCornerVector(vertex[0], point, vector_Y)
@@ -82,23 +85,21 @@ def plot_vertex(screen_vertex, pose2, pose5, pose11, pose12):
     plt.show()
 
 class Plane:
-    def __init__(self, screen_vertex, offset=0.0, offset_scale=0.001):
-        self.offset_scale = offset_scale
+    def __init__(self, screen_vertex):
         self.vertex = screen_vertex
-        self.init_offset = offset
-        self.offset = 0
         self.adjustment()
-
-    def adjustment(self, offset=None):
-        self.offset = (offset - self.init_offset if offset else 0) * self.offset_scale
-        screen_vertex = self.getVertex()
-        AB = vector.calcVector3D(screen_vertex[0], screen_vertex[1])
-        AC = vector.calcVector3D(screen_vertex[0], screen_vertex[-1])
+    
+    def adjustment(self):
+        AB = vector.calcVector3D(self.vertex[0], self.vertex[1])
+        AC = vector.calcVector3D(self.vertex[0], self.vertex[-1])
         AB_AC = np.cross(AB.parseArray(), AC.parseArray())
         self.p = AB_AC[0]
         self.q = AB_AC[1]
         self.r = AB_AC[2]
-        self.d = -(AB_AC[0]*screen_vertex[0].x + AB_AC[1]*screen_vertex[0].y + AB_AC[2]*screen_vertex[0].z)
+        self.d = -(AB_AC[0]*self.vertex[0].x + AB_AC[1]*self.vertex[0].y + AB_AC[2]*self.vertex[0].z)
+
+    def getVertex(self):
+        return self.vertex
 
     def getVertex(self):
         return [vector.Vector3D({'x': self.vertex[i].x, 'y': self.vertex[i].y, 'z': self.vertex[i].z + self.offset}) for i in range(4)]
@@ -110,8 +111,8 @@ class Plane:
 
 class SpatialPlane:
 
-    def __init__(self, screen_vertex, offset=0.0, offset_scale=0.001):
-        self.equation = Plane(screen_vertex, offset, offset_scale)
+    def __init__(self, screen_vertex):
+        self.equation = Plane(screen_vertex)
 
     def getVertex(self):
         return self.equation.getVertex()
@@ -119,20 +120,7 @@ class SpatialPlane:
     def calcIntersection(self, origin, v):
         k = -(self.equation.d + self.equation.p*origin.x + self.equation.q*origin.y + self.equation.r*origin.z)/(self.equation.p*v.x + self.equation.q*v.y + self.equation.r*v.z)
         return vector.Vector3D({'x': v.x*k+origin.x, 'y': v.y*k+origin.y, 'z': v.z*k+origin.z})
-    """
-    def calcIntersection(self, origin):
-        OA = vector.calcVector3D(self.getVertex()[0], self.getVertex()[1])
-        OB = vector.calcVector3D(self.getVertex()[0], self.getVertex()[-1])
-        OP = vector.calcVector3D(self.getVertex()[0], origin)
-        left = [[OA.x*OA.x+OA.y*OA.y+OA.z*OA.z, OA.x*OB.x+OA.y*OB.y+OA.z*OB.z],
-                [OA.x*OB.x+OA.y*OB.y+OA.z*OB.z, OB.x*OB.x+OB.y*OB.y+OB.z*OB.z]]
-        right = [OA.x*OP.x+OA.y*OP.y+OA.z*OP.z, OB.x*OP.x+OB.y*OP.y+OB.z*OP.z]
-        s, t = solve(left, right)
-        return vector.Vector3D({'x': self.getVertex()[0].x+s*OA.x+t*OB.x, 'y': self.getVertex()[0].y+s*OA.y+t*OB.y, 'z': self.getVertex()[0].z+s*OA.z+t*OB.z})
-    """
-    def calcIntersection(self, position):
-        z = - (self.equation.p*position.x + self.equation.q*position.y + self.equation.d) / self.equation.r
-        return vector.Vector3D({'x': position.x, 'y': position.y, 'z': z})
+
 class RealtimePlot:
     def __init__(self):
         self.plt = plt
@@ -140,12 +128,9 @@ class RealtimePlot:
         self.ax = Axes3D(self.fig)
         self.count = 0
 # xyz > zxy
-    def update(self, screen, pose_landmarks, eyes_landmark=None, target_landmarks=None):
-        if not pose_landmarks.pose_landmarks:
-            return
-        pose = lambda id: pose_landmarks.pose_landmarks.landmark[id]
-        if screen:
-            screen_vertex = screen.vertex
+    def update(self, screen_vertex, landmarks=None, target_landmarks=None):
+
+        if screen_vertex:
             self.ax.scatter([screen_vertex[0].x, screen_vertex[2].x], [screen_vertex[0].y, screen_vertex[2].y], [screen_vertex[0].z, screen_vertex[2].z], s=10, c="blue")
 
             self.ax.scatter([screen_vertex[1].x, screen_vertex[3].x], [screen_vertex[1].y, screen_vertex[3].y], [screen_vertex[1].z, screen_vertex[3].z], s=40, c="red")
@@ -153,17 +138,15 @@ class RealtimePlot:
                 [screen_vertex[0].x, screen_vertex[1].x, screen_vertex[2].x, screen_vertex[3].x, screen_vertex[0].x],
                 [screen_vertex[0].y, screen_vertex[1].y, screen_vertex[2].y, screen_vertex[3].y, screen_vertex[0].y],
                 [screen_vertex[0].z, screen_vertex[1].z, screen_vertex[2].z, screen_vertex[3].z, screen_vertex[0].z], color='red')
-        if pose_landmarks:
-            self.ax.plot([pose(2).x, pose(5).x], [pose(2).y, pose(5).y], [pose(2).z, pose(5).z], color='green') # Eye position
-            self.ax.plot([pose(11).x, pose(12).x], [pose(11).y, pose(12).y], [pose(11).z, pose(12).z], color='green') # Shoulder position
-            self.ax.plot([pose(11).x, pose(13).x, pose(15).x, pose(19).x], [pose(11).y, pose(13).y, pose(15).y, pose(19).y], [pose(11).z, pose(13).z, pose(15).z, pose(19).z], color='green') # Left arm
-            self.ax.plot([pose(12).x, pose(14).x, pose(16).x, pose(20).x], [pose(12).y, pose(14).y, pose(16).y, pose(20).y], [pose(12).z, pose(14).z, pose(16).z, pose(20).z], color='green') # Right arm
-        if eyes_landmark and target_landmarks:
-            self.ax.scatter([eyes_landmark.x], [eyes_landmark.y], [eyes_landmark.z], s=10, c="green")
+        if landmarks and landmarks.eye and target_landmarks:
+            self.ax.scatter([landmarks.eye.x], [landmarks.eye.y], [landmarks.eye.z], s=10, c="green")
+
+        if landmarks and landmarks.eye and target_landmarks:
+            hands = lambda side, id: landmarks.hands.get(side).landmark[id]
             self.ax.scatter([target_landmarks[0].x], [target_landmarks[0].y], [target_landmarks[0].z], s=10, c="blue")
             self.ax.scatter([target_landmarks[1].x], [target_landmarks[1].y], [target_landmarks[1].z], s=10, c="red")
-            self.ax.plot([eyes_landmark.x, pose(19).x], [eyes_landmark.y, pose(19).y], [eyes_landmark.z, pose(19).z], color='blue')
-            self.ax.plot([eyes_landmark.x, pose(20).x], [eyes_landmark.y, pose(20).y], [eyes_landmark.z, pose(20).z], color='red')
+            self.ax.plot([landmarks.eye.x, hands('left', 5).x], [landmarks.eye.y, hands('left', 5).y], [landmarks.eye.z, hands('left', 5).z], color='blue')
+            self.ax.plot([landmarks.eye.x, hands('right', 5).x], [landmarks.eye.y, hands('right', 5).y], [landmarks.eye.z, hands('right', 5).z], color='red')
         self.count += 0.5
         #self.ax.view_init(elev=0, azim=0)
         #self.ax.view_init(elev=90, azim=90)
@@ -172,11 +155,11 @@ class RealtimePlot:
         self.ax.set_zlabel('z') # z軸ラベル
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
-        self.ax.set_zlim(-1, 0)
+        self.ax.set_zlim(0, 1)
         self.plt.draw()
         self.plt.pause(0.001)
         self.plt.cla()
-
+"""
     def update(self, screen, pose_landmarks, target_landmarks=None):
         if not pose_landmarks.pose_landmarks:
             return
@@ -212,7 +195,7 @@ class RealtimePlot:
         self.plt.draw()
         self.plt.pause(0.001)
         self.plt.cla()
-
+"""
 def draw_screen(positions):
     margin = 400
     height = 600
