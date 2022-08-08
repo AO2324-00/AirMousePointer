@@ -9,7 +9,7 @@ import vector
 
 cursor_size = 10
 lefty=False
-offset=vector.Vector2D({'x': 400, 'y': 100})
+offset=vector.Vector2D({'x': 350, 'y': 100})
 
 width, height = pyautogui.size()
 pointer = estimate.Pointer()
@@ -51,7 +51,8 @@ def calcPosition(positions, offset=vector.Vector2D({'x': 0, 'y': 0})):
         y -= cursor_size if y > height-cursor_size else 0
         return vector.Vector2D({'x': x, 'y': y})
     return None
-smoothing = vector.Smoothing2D(13)
+
+smoothing = vector.Smoothing2D(7)
 while cap.isOpened():
     t = time.time()
     success, image = cap.read()
@@ -67,7 +68,15 @@ while cap.isOpened():
 
     position = calcPosition(positions, offset)
     if position:
-        print(position)
+        #print(position)
+        if len(smoothing.vector) > 0:
+            v = smoothing.vector[-1]
+            if vector.calcDistance2D(vector.Vector2D({'x': v[0], 'y': v[1]}), position) > 100:
+                #print(False)
+                smoothing.max = 3
+            else:
+                #print(True)
+                smoothing.max = 12
         smoothing.update(position)
         p = smoothing.get()
         mouse.move(p.x, p.y, True)

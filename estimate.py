@@ -118,6 +118,8 @@ class Pointer:
 
                 point = []
                 position = []
+                if results.eye:
+                    image = screen.draw_point(image, results.eye, (0, 255, 0))
                 if results.hands.left:
                     point_left = self.screen.calcIntersection(results.eye, vector.calcVector3D(results.eye, results.hands.left.landmark[5]))
                     position_left = screen.calc_position(self.screen.getVertex(), point_left)
@@ -140,11 +142,11 @@ class Pointer:
                 #cv2.imshow('Screen', screen.draw_screen(position))
                 #self.plot.update(self.screen.getVertex(), results, point)
                 #self.plot.update(self.screen, pose_landmarks, [point0, point1])
-                #self.plot.update(self.screen, pose_landmarks, pose_landmarks.pose_landmarks.landmark[20], [point1, point1])
+                #self.plot.update(self.screen, pose_landmarks, pose_landmarks.pose_landmarks.landmark[20], [point_left, point_right])
         else:
             #cv2.imshow('Screen', screen.draw_screen([]))
             #if self.screen:
-            #    self.plot.update(self.screen.getVertex())
+                #self.plot.update(self.screen.getVertex())
             if self.screen != None:
                 image = screen.draw_border(image, self.screen.getVertex())
         #cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))

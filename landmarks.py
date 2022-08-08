@@ -37,7 +37,7 @@ class HandLandmarks:
 
 class LandmarkParser:
 
-    def __init__(self, offset=0.05, max=3):
+    def __init__(self, offset=0.05, max=4):
         self.frame = np.array([])
         self.offset = offset
         self.max = max
@@ -46,12 +46,12 @@ class LandmarkParser:
         if not Pose.pose_landmarks:
             return Landmarks(None, BothSides())
         height, width, _ = image.shape
-        eye_depth = vector.calcDistance3D(Pose.pose_landmarks.landmark[2], Pose.pose_landmarks.landmark[5], vector.Vector3D({'x': width, 'y': height, 'z': width}))
+        eye_depth = vector.calcDistance3D(Pose.pose_landmarks.landmark[2], Pose.pose_landmarks.landmark[5], vector.Vector3D({'x': width, 'y': height, 'z': width})) * 0.8
         eye_depth /= width
         #print(eye_depth)
         eye = vector.calcMiddleVector(Pose.pose_landmarks.landmark[2], Pose.pose_landmarks.landmark[5])
         eye.z = eye_depth
-        eye.z *= 3
+        eye.z *= 10
         eye.z -= self.offset
         #print(eye.z)
 
@@ -70,10 +70,10 @@ class LandmarkParser:
             left_depth = 0
             right_depth = 0
             if hands.left:
-                d0 = vector.calcDistance2D(hands.left.landmark[5], hands.left.landmark[17], vector.Vector2D({'x': width, 'y': height}))
+                d0 = vector.calcDistance3D(hands.left.landmark[5], hands.left.landmark[17], vector.Vector3D({'x': width, 'y': height, 'z': width}))
                 #d1 = vector.calcDistance2D(hands.left.landmark[2], hands.left.landmark[17], vector.Vector2D({'x': width, 'y': height}))
                 #d2 = vector.calcDistance2D(hands.left.landmark[0], hands.left.landmark[5], vector.Vector2D({'x': width, 'y': height}))*0.9
-                d3 = vector.calcDistance2D(hands.left.landmark[0], hands.left.landmark[17], vector.Vector2D({'x': width, 'y': height}))*0.9
+                d3 = vector.calcDistance3D(hands.left.landmark[0], hands.left.landmark[17], vector.Vector3D({'x': width, 'y': height, 'z': width}))*0.8
                 #d4 = vector.calcDistance2D(hands.left.landmark[0], hands.left.landmark[2], vector.Vector2D({'x': width, 'y': height}))
                 #print('{:6>.2f}'.format(d0), '{:6>.2f}'.format(d1), '{:6>.2f}'.format(d2), '{:6>.2f}'.format(d3), '{:6>.2f}'.format(d4))
                 #left_depth = max(d0, d1, d2, d3, d4)
@@ -81,23 +81,23 @@ class LandmarkParser:
                 left_depth = max(d0, d3)
                 left_depth /= width
                 #print(left_depth)
-                left_depth *= 3
+                left_depth *= 10
             if hands.right:
-                d0 = vector.calcDistance2D(hands.right.landmark[5], hands.right.landmark[17], vector.Vector2D({'x': width, 'y': height}))
+                d0 = vector.calcDistance3D(hands.right.landmark[5], hands.right.landmark[17], vector.Vector3D({'x': width, 'y': height, 'z': width}))
                 #d1 = vector.calcDistance2D(hands.right.landmark[2], hands.right.landmark[17], vector.Vector2D({'x': width, 'y': height}))
                 #d2 = vector.calcDistance2D(hands.right.landmark[0], hands.right.landmark[5], vector.Vector2D({'x': width, 'y': height}))*0.9
-                d3 = vector.calcDistance2D(hands.right.landmark[0], hands.right.landmark[17], vector.Vector2D({'x': width, 'y': height}))*0.9
+                d3 = vector.calcDistance3D(hands.right.landmark[0], hands.right.landmark[17], vector.Vector3D({'x': width, 'y': height, 'z': width}))*0.8
                 #d4 = vector.calcDistance2D(hands.right.landmark[0], hands.right.landmark[2], vector.Vector2D({'x': width, 'y': height}))
                 #right_depth = max(d0, d1, d2, d3, d4)
                 right_depth = max(d0, d3)
                 right_depth /= width
-                right_depth *= 3
+                right_depth *= 10
             for i in hand_index:
                 if hands.left: 
-                    hands.left.landmark[i].z /= 100
+                    hands.left.landmark[i].z /= 10
                     hands.left.landmark[i].z += left_depth
                 if hands.right:
-                    hands.right.landmark[i].z /= 100
+                    hands.right.landmark[i].z /= 10
                     hands.right.landmark[i].z += right_depth
 
         return Landmarks(eye, hands)

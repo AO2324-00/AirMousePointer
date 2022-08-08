@@ -122,6 +122,11 @@ def calcVector3D(o, p):
         'y': p.y - o.y,
         'z': p.z - o.z,
     })
+def calcVector2D(o, p):
+    return Vector2D({
+        'x': p.x - o.x,
+        'y': p.y - o.y,
+    })
 
 def calcDotProduct(u=np.array([0, 0]), v=np.array([1, 0])):
     i = np.inner(u, v)
@@ -209,8 +214,11 @@ class Smoothing2D:
 
     def update(self, vector):
         self.vector = np.append(self.vector, np.array([[vector.x, vector.y]]), axis=0)
-        if(len(self.vector) > self.max):
-            self.vector = np.delete(self.vector, 0, axis=0)
+        over_vector = int((len(self.vector) - self.max)/2+1)
+        if over_vector > 0:
+            print(over_vector)
+            for i in range(over_vector):
+                self.vector = np.delete(self.vector, 0, axis=0)
 
     def get(self):
         if(len(self.vector) <= 0):
