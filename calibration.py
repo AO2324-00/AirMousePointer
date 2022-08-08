@@ -16,6 +16,7 @@ class HandState:
         self.max = max
         self.timer = None
         self.screen_positions = np.array([])
+        self.screen_offsets = np.array([])
 
     def isRecognizing(self, eye, hands):
         if not (eye and hands.left and hands.right) :
@@ -54,14 +55,15 @@ class HandState:
         if not isRecognising:
             self.timer = None
             self.screen_positions = np.array([])
-            return None, -1
+            self.screen_offsets = np.array([])
+            return None, -1, None
         elif self.timer == None:
             self.timer = time.time()
         
         elapsed_time = time.time() - self.timer
 
         if elapsed_time < 1:
-            return None, elapsed_time
+            return None, elapsed_time, None
         elif 2 < elapsed_time:
             getVector = np.vectorize(lambda frame, id: frame[id])
             screen_vertex = screen.calc_vertex(
@@ -69,6 +71,9 @@ class HandState:
                 vector.Average3D(getVector(self.screen_positions, 'left')),
                 vector.Average3D(getVector(self.screen_positions, 'right')))
             self.screen_positions = np.array([])
+            left_offset = np.average(getVector(self.screen_offsets, 'left'))
+            right_offset = np.average(getVector(self.screen_offsets, 'right'))
+            self.screen_offsets = np.array([])
             self.timer = None
             return screen_vertex, elapsed_time
         v_left = vector.calcVector3D(hands.left.landmark[5], hands.left.landmark[8])

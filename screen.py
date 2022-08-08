@@ -101,6 +101,9 @@ class Plane:
     def getVertex(self):
         return self.vertex
 
+    def getVertex(self):
+        return [vector.Vector3D({'x': self.vertex[i].x, 'y': self.vertex[i].y, 'z': self.vertex[i].z + self.offset}) for i in range(4)]
+
     def isIncluded(self, v):
         threshold = 1e-10
         result = self.p*v.x + self.q*v.y + self.r*v.z + self.d
