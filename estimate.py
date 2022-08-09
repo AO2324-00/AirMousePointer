@@ -40,7 +40,7 @@ class Pointer:
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.plot = screen.RealtimePlot()
 
-        self.calibration = calibration.HandState()
+        self.calibration = calibration.VirtualScreen()
         self.LandmarkParser = landmarks.LandmarkParser()
         self.screen = None
 
@@ -96,25 +96,19 @@ class Pointer:
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        #print(hands_landmarks.multi_hand_landmarks)
-        if results.eye: # and results.hands.left and results.hands.right:# and hands_landmarks.multi_hand_landmarks:
+        if results.eye:
 
             # キャリブレーション
-            screen_vertex, state = self.calibration.calcPosition(results.eye, results.hands)
-            #print(screen_vertex)
-            #print(state)
-            #print('{:6>.2f}'.format(left_offset), '{:6>.2f}'.format(right_offset))
+            screen_vertex, state = self.calibration.calcVertex(results.eye, results.hands)
             if screen_vertex != None:
                 image = screen.draw_border(image, screen_vertex, (255, 255, 100))
                 if state >= 2:
-                    #self.screen = screen.SpatialPlane(screen_vertex, (screen_offsets['left']+screen_offsets['right'])/2)
                     self.screen = screen.SpatialPlane(screen_vertex)
             elif self.screen != None:
                 
                 image = screen.draw_border(image, self.screen.getVertex())
 
                 results = self.LandmarkParser.get([5])
-                #print(results.hands.left.landmark[0].x, _results.hands.left.landmark[0].x)
 
                 point = []
                 position = []
@@ -123,8 +117,6 @@ class Pointer:
                 if results.hands.left:
                     point_left = self.screen.calcIntersection(results.eye, vector.calcVector3D(results.eye, results.hands.left.landmark[5]))
                     position_left = screen.calc_position(self.screen.getVertex(), point_left)
-                    #position_left.x = (position_left.x - 0.5) * 0.9 + 0.5
-                    #position_left.y = (position_left.y - 0.5) * 0.9 + 0.5
                     image = screen.draw_point(image, point_left, (255, 0, 0))
                     point.append(point_left)
                     position.append(position_left)
@@ -132,24 +124,13 @@ class Pointer:
                 if results.hands.right:
                     point_right = self.screen.calcIntersection(results.eye, vector.calcVector3D(results.eye, results.hands.right.landmark[5]))
                     position_right = screen.calc_position(self.screen.getVertex(), point_right)
-                    #position_right.x = (position_right.x - 0.5) * 0.9 + 0.5
-                    #position_right.y = (position_right.y - 0.5) * 0.9 + 0.5
-                    #print(position_0, position_1)
                     image = screen.draw_point(image, point_right, (0, 0, 255))
                     point.append(point_right)
                     position.append(position_right)
                     pointer.right = position_right
-                #cv2.imshow('Screen', screen.draw_screen(position))
-                #self.plot.update(self.screen.getVertex(), results, point)
-                #self.plot.update(self.screen, pose_landmarks, [point0, point1])
-                #self.plot.update(self.screen, pose_landmarks, pose_landmarks.pose_landmarks.landmark[20], [point_left, point_right])
         else:
-            #cv2.imshow('Screen', screen.draw_screen([]))
-            #if self.screen:
-                #self.plot.update(self.screen.getVertex())
             if self.screen != None:
                 image = screen.draw_border(image, self.screen.getVertex())
-        #cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
         
         return image, pointer
 
