@@ -10,34 +10,30 @@ v0 = vector.calcVector3D(hands_landmarks.multi_hand_landmarks[0].landmark[5], ha
 v1 = vector.calcVector3D(hands_landmarks.multi_hand_landmarks[1].landmark[5], hands_landmarks.multi_hand_landmarks[1].landmark[8])
 v = vector.Vector3D({'x': v0.x-v1.x, 'y': v0.y-v1.y, 'z': v0.z-v1.z})
 """
-def calc_vertex(v, p0, p1):
-    c0 = vector.Vector3D({'x': p0.x, 'y': p0.y, 'z': (p0.z*4 + p1.z*1)/5}) 
-    c2 = vector.Vector3D({'x': p1.x, 'y': p1.y, 'z': (p1.z*4 + p0.z*1)/5}) 
-    c0 = p0
-    c2 = p1
+def calcVertex(v, p0, p1):
+    c0 = vector.Vector3D(x=p0.x, y=p0.y, z=(p0.z*4 + p1.z*1)/5) 
+    c2 = vector.Vector3D(x=p1.x, y=p1.y, z=(p1.z*4 + p0.z*1)/5) 
     c1 = vector.calcCornerVector(c0, c2, v)
     c3 = vector.calcCornerVector(c2, c0, v)
-    return [c0, c1, c2, c3]
-
-def calc_position(screen_vertex, point):
-    #print(point)
-    vertex = [screen_vertex[0], screen_vertex[1], screen_vertex[2], screen_vertex[3]]
+    screen_vertex = [p0, c1, p1, c3]
     if screen_vertex[0].y > screen_vertex[1].y:
-        #vertex = [screen_vertex[2], screen_vertex[3], screen_vertex[0], screen_vertex[1]]
-        vertex = [screen_vertex[1], screen_vertex[0], screen_vertex[3], screen_vertex[2]]
-    vector_X = vector.calcVector3D(vertex[0], vertex[3])
-    vector_Y = vector.calcVector3D(vertex[0], vertex[1])
-    x = vector.calcCornerVector(vertex[0], point, vector_Y)
-    y = vector.calcCornerVector(vertex[0], point, vector_X)
-    vector_x = vector.calcVector3D(vertex[0], x)
-    vector_y = vector.calcVector3D(vertex[0], y)
+        screen_vertex = [screen_vertex[1], screen_vertex[0], screen_vertex[3], screen_vertex[2]]
+    return screen_vertex
+
+def calcPosition(screen_vertex, point):
+    vector_X = vector.calcVector3D(screen_vertex[0], screen_vertex[3])
+    vector_Y = vector.calcVector3D(screen_vertex[0], screen_vertex[1])
+    x = vector.calcCornerVector(screen_vertex[0], point, vector_Y)
+    y = vector.calcCornerVector(screen_vertex[0], point, vector_X)
+    vector_x = vector.calcVector3D(screen_vertex[0], x)
+    vector_y = vector.calcVector3D(screen_vertex[0], y)
     sign_x = np.sign(vector_x.x*vector_X.x + vector_x.y*vector_X.y + vector_x.z*vector_X.z)
     sign_y = np.sign(vector_y.x*vector_Y.x + vector_y.y*vector_Y.y + vector_y.z*vector_Y.z)
     #print(sign_x, sign_y)
-    return vector.Vector2D({
-        'x': sign_x * (vector.calcDistance3D(vertex[0], x) / vector.calcDistance3D(vertex[0], vertex[3])),
-        'y': sign_y * (vector.calcDistance3D(vertex[0], y) / vector.calcDistance3D(vertex[0], vertex[1]))
-    })
+    return vector.Vector2D(
+        x = sign_x * (vector.calcDistance3D(screen_vertex[0], x) / vector.calcDistance3D(screen_vertex[0], screen_vertex[3])),
+        y = sign_y * (vector.calcDistance3D(screen_vertex[0], y) / vector.calcDistance3D(screen_vertex[0], screen_vertex[1]))
+    )
 
 
 
@@ -116,7 +112,7 @@ class SpatialPlane:
     
     def calcIntersection(self, origin, v):
         k = -(self.equation.d + self.equation.p*origin.x + self.equation.q*origin.y + self.equation.r*origin.z)/(self.equation.p*v.x + self.equation.q*v.y + self.equation.r*v.z)
-        return vector.Vector3D({'x': v.x*k+origin.x, 'y': v.y*k+origin.y, 'z': v.z*k+origin.z})
+        return vector.Vector3D(x=v.x*k+origin.x, y=v.y*k+origin.y, z=v.z*k+origin.z)
 
 class RealtimePlot:
     def __init__(self):
