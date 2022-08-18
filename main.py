@@ -21,10 +21,11 @@ def mouseController(config, estimate: Estimate, smoothing: Smoothing2D):
     #print(estimate.hand_gesture_recognizer.isMouseScrolling().get(side))
     if estimate.hand_gesture_recognizer.isMouseScrolling().get(side):
         if not estimate.pointer.isSaving('scroller'):
+            print("scroll start")
             estimate.pointer.savePositions('scroller')
         v = calcVector2D(estimate.pointer.getSavePositions('scroller', True).get(side),estimate.pointer.getPositions(True).get(side))
-        if estimate.pointer.getSavePositions('scroller').get(side):
-            print("scroll")
+        print(v, estimate.pointer.getSavePositions('scroller', True).get(side))
+        if estimate.pointer.getSavePositions('scroller', True).get(side):
             if abs(v.x) < abs(v.y):
                 mouse.wheel(delta=sign(v.y)*-1)
             else:
@@ -33,7 +34,7 @@ def mouseController(config, estimate: Estimate, smoothing: Smoothing2D):
                 keyboard.release('shift')
         return
     elif estimate.pointer.isSaving('scroller'):
-        print("release")
+        print("scroll end")
         estimate.pointer.releaseSavePositions('scroller')
     
     # ポインタの移動
@@ -80,7 +81,7 @@ class Config:
         self.fine_mouse_sensitivity = fine_mouse_sensitivity
 screen = get_monitors()[0]
 config = Config(screen_size=Vector2D(x=screen.width, y=screen.height))
-smoothing = Smoothing2D(8)
+smoothing = Smoothing2D(10)
 estimate = Estimate(config)
 cap = cv2.VideoCapture(0)
 while cap.isOpened():

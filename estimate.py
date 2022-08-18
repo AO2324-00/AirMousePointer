@@ -1,14 +1,12 @@
 import numpy as np
 import cv2
 import mediapipe as mp
-import pyautogui
 
 from hand_gesture_recognizer import HandGestureRecognizer
+from screen import RealtimePlot
 
 from vector import Vector2D
 from landmarks import Landmarks
-import screen
-import calibration
 
 from virtual_screen import VirtualScreen
 from pointer import Pointer
@@ -161,6 +159,8 @@ class Estimate:
         self.pointer = Pointer(config=self.__config)
         self.hand_gesture_recognizer = HandGestureRecognizer()
 
+        self.plot = RealtimePlot()
+
     def __del__(self):
         self.__hands.close()
         self.__pose.close()
@@ -185,6 +185,10 @@ class Estimate:
         self.hand_gesture_recognizer.update(self.landmarks)
         #print(self.hand_gesture_recognizer.isMouseMoving())
         self.pointer.calcPosition(self.virtual_screen.getSpatialPlane(), self.landmarks)
+
+        if self.virtual_screen.getSpatialPlane():
+            tmp = self.pointer.getPoints()
+            self.plot.update(self.virtual_screen.getSpatialPlane().getVertex(), landmarks=self.landmarks, target_landmarks=[tmp.left, tmp.right])
 
         return image
 
