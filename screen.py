@@ -40,11 +40,11 @@ def calcPosition(screen_vertex, point):
 def draw_border(image, screen_vertex, color=(255, 255, 255)):
     annotated_image = image.copy()
     height, width, _ = image.shape
-    annotated_image = cv2.circle(annotated_image, (int(screen_vertex[0].x*width), int(screen_vertex[0].y*height)), 10, (255, 0, 0), thickness=-1)
-    annotated_image = cv2.circle(annotated_image, (int(screen_vertex[1].x*width), int(screen_vertex[1].y*height)), 10, (100, 0, 0), thickness=-1)
-    annotated_image = cv2.circle(annotated_image, (int(screen_vertex[2].x*width), int(screen_vertex[2].y*height)), 10, (0, 200, 0), thickness=-1)
+    annotated_image = cv2.circle(annotated_image, (int(screen_vertex[0].x*width), int(screen_vertex[0].y*height)), 4, (255, 0, 0), thickness=-1)
+    annotated_image = cv2.circle(annotated_image, (int(screen_vertex[1].x*width), int(screen_vertex[1].y*height)), 4, (100, 0, 0), thickness=-1)
+    annotated_image = cv2.circle(annotated_image, (int(screen_vertex[2].x*width), int(screen_vertex[2].y*height)), 4, (0, 200, 0), thickness=-1)
     for index in range(len(screen_vertex)):
-        cv2.line(annotated_image, (int(screen_vertex[index-1].x*width), int(screen_vertex[index-1].y*height)), (int(screen_vertex[index].x*width), int(screen_vertex[index].y*height)), color, thickness=3)
+        cv2.line(annotated_image, (int(screen_vertex[index-1].x*width), int(screen_vertex[index-1].y*height)), (int(screen_vertex[index].x*width), int(screen_vertex[index].y*height)), color, thickness=2)
     return annotated_image
 
 def draw_point(image, point_landmark, color=(255, 255, 255)):
@@ -56,7 +56,7 @@ def draw_point(image, point_landmark, color=(255, 255, 255)):
 def draw_line(image, line_landmarks, color=(255, 255, 255)):
     annotated_image = image.copy()
     height, width, _ = image.shape
-    cv2.line(annotated_image, (int(line_landmarks[0].x*width), int(line_landmarks[0].y*height)), (int(line_landmarks[1].x*width), int(line_landmarks[1].y*height)), color, thickness=1)
+    cv2.line(annotated_image, (int(line_landmarks[0].x*width), int(line_landmarks[0].y*height)), (int(line_landmarks[1].x*width), int(line_landmarks[1].y*height)), color, thickness=2)
     return annotated_image
 
 def plot_vertex(screen_vertex, pose2, pose5, pose11, pose12):

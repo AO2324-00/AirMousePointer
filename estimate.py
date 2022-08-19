@@ -92,11 +92,11 @@ class Estimate:
             self.plot.update(self.virtual_screen.getSpatialPlane().getVertex(), landmarks=self.landmarks, target_landmarks=[tmp.left, tmp.right])
             image = draw_border(image, self.virtual_screen.getSpatialPlane().getVertex())
             if tmp.left:
-                image = draw_point(image, tmp.left)
-                image = draw_line(image, [self.landmarks.eye, tmp.left])
+                image = draw_point(image, tmp.left, color=(50, 50, 255))
+                image = draw_line(image, [self.landmarks.eye, tmp.left], color=(50, 50, 255))
             if tmp.right:
-                image = draw_point(image, tmp.right)
-                image = draw_line(image, [self.landmarks.eye, tmp.right])
+                image = draw_point(image, tmp.right, color=(255, 50, 50))
+                image = draw_line(image, [self.landmarks.eye, tmp.right], color=(255, 50, 50))
 
         if Hands.multi_hand_landmarks:
             image = draw_hands_landmarks(image, Hands)
