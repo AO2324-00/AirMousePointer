@@ -5,7 +5,6 @@ import mediapipe as mp
 from hand_gesture_recognizer import HandGestureRecognizer
 from screen import RealtimePlot, draw_border, draw_line, draw_point
 
-from vector import Vector2D
 from landmarks import Landmarks
 
 from virtual_screen import VirtualScreen
@@ -73,7 +72,7 @@ class Estimate:
 
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = adjust(image, 1.7, 30.0)
+        #image = adjust(image, 1.7, 30.0)
 
         Hands = self.__hands.process(image)
         Pose = self.__pose.process(image)
@@ -89,7 +88,7 @@ class Estimate:
 
         if self.virtual_screen.getSpatialPlane():
             tmp = self.pointer.getPoints()
-            self.plot.update(self.virtual_screen.getSpatialPlane().getVertex(), landmarks=self.landmarks, target_landmarks=[tmp.left, tmp.right])
+            #self.plot.update(self.virtual_screen.getSpatialPlane().getVertex(), landmarks=self.landmarks, target_landmarks=[tmp.left, tmp.right])
             image = draw_border(image, self.virtual_screen.getSpatialPlane().getVertex())
             if tmp.left:
                 image = draw_point(image, tmp.left, color=(50, 50, 255))

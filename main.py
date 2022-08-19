@@ -21,10 +21,10 @@ def mouseController(config, estimate: Estimate, smoothing: Smoothing2D):
     #print(estimate.hand_gesture_recognizer.isMouseScrolling().get(side))
     if estimate.hand_gesture_recognizer.isMouseScrolling().get(side):
         if not estimate.pointer.isSaving('scroller'):
-            print("scroll start")
+            #print("scroll start")
             estimate.pointer.savePositions('scroller')
         v = calcVector2D(estimate.pointer.getSavePositions('scroller', True).get(side),estimate.pointer.getPositions(True).get(side))
-        print(v, estimate.pointer.getSavePositions('scroller', True).get(side))
+        #print(v, estimate.pointer.getSavePositions('scroller', True).get(side))
         if estimate.pointer.getSavePositions('scroller', True).get(side):
             if abs(v.x) < abs(v.y):
                 mouse.wheel(delta=sign(v.y)*-1)
@@ -34,7 +34,7 @@ def mouseController(config, estimate: Estimate, smoothing: Smoothing2D):
                 keyboard.release('shift')
         return
     elif estimate.pointer.isSaving('scroller'):
-        print("scroll end")
+        #print("scroll end")
         estimate.pointer.releaseSavePositions('scroller')
     
     # ポインタの移動
@@ -119,7 +119,7 @@ while cap.isOpened():
         smoothed = smoothing.get()
         mouse.move(smoothed.x, smoothed.y, True)
     """
-    
+    image = cv2.resize(image, dsize=None, fx=0.5, fy=0.5)
     cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
     #print(time.time()-t)
     if cv2.waitKey(5) & 0xFF == 27:
