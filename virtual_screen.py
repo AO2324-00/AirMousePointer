@@ -2,10 +2,9 @@ import time as Timer
 from typing import Optional
 import numpy as np
 from scipy.optimize import curve_fit
-from torch import le
 from landmarks import Landmarks, BothSides
 import vector
-from vector import Vector3D, calcMiddleVector, calcVector3D
+from vector import Vector3D
 from screen import SpatialPlane, calcVertex
 
 def func(X, a, b, c):
@@ -13,7 +12,7 @@ def func(X, a, b, c):
 
 class VirtualScreen:
 
-    def __init__(self, *, calibration_frame_limit: int=5, calibration_history_limit: int=4):
+    def __init__(self, *, calibration_frame_limit: int=5, calibration_history_limit: int=10):
         self.__isCalibrating: bool = False
         self.__spatial_plane: Optional[SpatialPlane] = None
 
@@ -96,10 +95,12 @@ class VirtualScreen:
             return None
         if 2 < elapsed_time:
             getVector = np.vectorize(lambda frame, id: frame[id])
+            """
             screen_vertex = calcVertex(
                 vector.Average3D(getVector(self.__screen_positions, 'v')),
                 vector.Average3D(getVector(self.__screen_positions, 'left')),
                 vector.Average3D(getVector(self.__screen_positions, 'right')))
+            """
             positions = {'eye': landmarks.eye, 'v': vector.Average3D(getVector(self.__screen_positions, 'v')), 'left': vector.Average3D(getVector(self.__screen_positions, 'left')), 'right': vector.Average3D(getVector(self.__screen_positions, 'right'))}
             self.__screen_positions = np.array([])
             self.__time = None
@@ -121,7 +122,7 @@ class VirtualScreen:
         self.__screen_positions_history = np.append(self.__screen_positions_history, positions)
         if len(self.__screen_positions_history) > self.__calibration_history_limit:
             self.__screen_positions_history = np.delete(self.__screen_positions_history, 0)
-        print("キャリブレートカウント: ",len(self.__screen_positions_history))
+        print("キャリブレートカウント: ",len(self.__screen_positions_history), "/", self.__calibration_history_limit)
 
         if len(self.__screen_positions_history) <= 2:
             return None
