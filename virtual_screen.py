@@ -13,7 +13,7 @@ def func(X, a, b, c):
 
 class VirtualScreen:
 
-    def __init__(self, *, calibration_frame_limit: int=5, calibration_history_limit: int=3):
+    def __init__(self, *, calibration_frame_limit: int=5, calibration_history_limit: int=4):
         self.__isCalibrating: bool = False
         self.__spatial_plane: Optional[SpatialPlane] = None
 
