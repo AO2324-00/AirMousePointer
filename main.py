@@ -119,7 +119,7 @@ while cap.isOpened():
         smoothed = smoothing.get()
         mouse.move(smoothed.x, smoothed.y, True)
     """
-    image = cv2.resize(image, dsize=None, fx=0.5, fy=0.5)
+    image = cv2.resize(image, dsize=None, fx=2, fy=2)
     cv2.imshow('MediaPipe Pose', cv2.flip(image, 1))
     #print(time.time()-t)
     if cv2.waitKey(5) & 0xFF == 27:

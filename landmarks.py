@@ -100,14 +100,7 @@ class Landmarks:
         hands = BothSides(left=HandLandmarks(hand_index), right=HandLandmarks(hand_index))
         if Hands.multi_hand_landmarks:
             
-            if calcRelativeHandsPosition(Pose, Hands.multi_hand_landmarks[0].landmark[0]) == 'left':
-                multi_hands.left = Hands.multi_hand_landmarks[0]
-                if len(Hands.multi_hand_landmarks) >= 2:
-                    multi_hands.right = Hands.multi_hand_landmarks[1]
-            else:
-                multi_hands.right = Hands.multi_hand_landmarks[0]
-                if len(Hands.multi_hand_landmarks) >= 2:
-                    multi_hands.left = Hands.multi_hand_landmarks[1]
+            multi_hands = calcRelativeHandsPosition(Pose, Hands.multi_hand_landmarks)
 
             hands_depth = BothSides(left=0, right=0)
             
@@ -177,11 +170,28 @@ class LandmarkParser:
 
         return result
 
-def calcRelativeHandsPosition(pose_landmarks, landmark):
-    left = pose_landmarks.pose_landmarks.landmark[15]
-    right = pose_landmarks.pose_landmarks.landmark[16]
+def calcRelativeHandsPosition(pose_landmarks, multi_hand_landmarks):
+    left = None
+    right = None
+    distance_left = 1
+    distance_right = 1
+    if len(multi_hand_landmarks) == 1:
+        landmarks = multi_hand_landmarks[0]
+        distance_left = vector.calcDistance2D(pose_landmarks.pose_landmarks.landmark[15], landmarks.landmark[0])
+        distance_right = vector.calcDistance2D(pose_landmarks.pose_landmarks.landmark[16], landmarks.landmark[0])
+        left = landmarks if distance_left < distance_right else None
+        right = landmarks if distance_left >= distance_right else None
+        return BothSides(left=left, right=right)
 
-    distance_left = vector.calcDistance2D(left, landmark)
-    distance_right = vector.calcDistance2D(right, landmark)
+    for landmarks in multi_hand_landmarks:
+        landmarks = landmarks
+        distance = vector.calcDistance2D(pose_landmarks.pose_landmarks.landmark[15], landmarks.landmark[0])
+        if distance < distance_left:
+            distance_left = distance
+            left = landmarks
+        distance = vector.calcDistance2D(pose_landmarks.pose_landmarks.landmark[16], landmarks.landmark[0])
+        if distance < distance_right:
+            distance_right = distance
+            right = landmarks
 
-    return 'left' if distance_left < distance_right else 'right'
+    return BothSides(left=left, right=right)

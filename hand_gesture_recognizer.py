@@ -20,8 +20,8 @@ class HandGestureRecognizer:
             self.__is_mouse_moving.set(side, self.__isMouseMoving(landmarks.hands.get(side)))
             for type in ['left', 'right', 'middle']:
                 self.__is_mouse_pressed.get(side)[type] = self.__isMousePressed(landmarks.hands.get(side), type=type)
-            if side == "right":
-                self.__is_mouse_scrolling.set(side, self.__isScrolling(landmarks.hands.get(side)))
+            # if side == "right":
+            self.__is_mouse_scrolling.set(side, self.__isScrolling(landmarks.hands.get(side)))
 
     def getState(self, name: str) -> bool:
         return self.__state[name]
@@ -59,21 +59,19 @@ class HandGestureRecognizer:
     def __isScrolling(self, hand: HandLandmarks):
         palm_0 = calcVector3D(hand.landmark[0], hand.landmark[5])
         palm_1 = calcVector3D(hand.landmark[0], hand.landmark[9])
-        finger_edge_0 = calcVector3D(hand.landmark[7], hand.landmark[8])
-        finger_edge_1 = calcVector3D(hand.landmark[11], hand.landmark[12])
-        angle_palm_0 = calcDotProduct(palm_0, finger_edge_0)
-        angle_palm_1 = calcDotProduct(palm_1, finger_edge_1)
+        palm_3 = calcVector3D(hand.landmark[0], hand.landmark[17])
+        finger_mid_0 = calcVector3D(hand.landmark[5], hand.landmark[7])
+        finger_mid_1 = calcVector3D(hand.landmark[9], hand.landmark[11])
+        finger_mid_3 = calcVector3D(hand.landmark[17], hand.landmark[19])
+        finger_angle_0 = calcDotProduct(palm_0, finger_mid_0)
+        finger_angle_1 = calcDotProduct(palm_1, finger_mid_1)
+        finger_angle_3 = calcDotProduct(palm_3, finger_mid_3)
+        finger_angle_4 = calcDotProduct(calcVector3D(hand.landmark[0], hand.landmark[1]), calcVector3D(hand.landmark[2], hand.landmark[4]))
+        angle_min = 90
+        is_closed_finger_0 = finger_angle_0 > angle_min
+        is_closed_finger_1 = finger_angle_1 > angle_min
+        is_closed_finger_3 = finger_angle_3 > angle_min
+        thumb = finger_angle_4 < 38
         
-        palm_length_0 = calcDistance3D(hand.landmark[0], hand.landmark[5])
-        palm_length_1 = calcDistance3D(hand.landmark[0], hand.landmark[9])
-        finger_length_0 = calcDistance3D(hand.landmark[5], hand.landmark[8])
-        finger_length_1 = calcDistance3D(hand.landmark[9], hand.landmark[12])
-        is_extend_finger_0 = 0 < angle_palm_0 < 25 and palm_length_0 * 0.75 < finger_length_0
-        is_extend_finger_1 = 0 < angle_palm_1 < 25 and palm_length_1 * 0.85 < finger_length_1
-        #is_extend_finger_3 = 0 < calcDotProduct(palm_0, finger_edge_1) < 28
-        threshold_0 = calcDistance3D(hand.landmark[5], hand.landmark[9]) * 1.2
-        threshold_1 = calcDistance3D(hand.landmark[13], hand.landmark[17]) * 0.9
-        isClose_0 = threshold_0 >= calcDistance3D(hand.landmark[8], hand.landmark[12])
-        isClose_1 = threshold_1 >= calcDistance3D(hand.landmark[15], hand.landmark[20])
-        return is_extend_finger_0 and is_extend_finger_1 and (isClose_0 or isClose_1)
+        return is_closed_finger_0 and is_closed_finger_1 and is_closed_finger_3 and thumb
 
