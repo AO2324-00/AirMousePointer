@@ -44,11 +44,11 @@ class Estimate:
 
         self.__hands =  mp.solutions.hands.Hands(
             static_image_mode = False,      # 単体の画像かどうか(Falseの場合は入力画像を連続したものとして扱います)。
-            max_num_hands = 2,              # 認識する手の最大数。
+            max_num_hands = 4,              # 認識する手の最大数。
             model_complexity = 1,           # 手のランドマークモデルの複雑さ(0 or 1)。
             #min_detection_confidence = 0.3,
-            min_detection_confidence = 0.7, # 検出が成功したと見なされるための最小信頼値(0.0 ~ 1.0)。
-            min_tracking_confidence = 0.6   # 前のフレームからランドマークが正常に追跡されたとみなされるための最小信頼度(0.0 ~ 1.0)。
+            min_detection_confidence = 0.5, # 検出が成功したと見なされるための最小信頼値(0.0 ~ 1.0)。
+            min_tracking_confidence = 0.5   # 前のフレームからランドマークが正常に追跡されたとみなされるための最小信頼度(0.0 ~ 1.0)。
         )
         self.__pose = mp.solutions.pose.Pose(
             static_image_mode = False,      # 単体の画像かどうか(Falseの場合は入力画像を連続したものとして扱います)。
@@ -72,7 +72,7 @@ class Estimate:
 
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        #image = adjust(image, 1.7, 30.0)
+        image = adjust(image, 1.7, 30.0)
 
         Hands = self.__hands.process(image)
         Pose = self.__pose.process(image)
