@@ -45,19 +45,19 @@ class VirtulScreenRecognizer:
     def __calcScreenLandmarks(self, landmarks: Landmarks)->ScreenLandmarks:
 
         eye = calcMiddleVector(landmarks.pose.landmark[2], landmarks.pose.landmark[5])
-        raw_point_left = landmarks.hands.left.raw_landmark[1]
-        raw_point_right = landmarks.hands.right.raw_landmark[1]
+        raw_point_left = landmarks.hands.left.raw_landmark[5]
+        raw_point_right = landmarks.hands.right.raw_landmark[5]
 
         vector_left = calcVector3D(landmarks.hands.left.landmark[5].get(), landmarks.hands.left.landmark[8].get())
         vector_right = calcVector3D(landmarks.hands.right.landmark[8].get(), landmarks.hands.right.landmark[5].get())
         vector = vector_left.addition(vector_right)
-        vector.z = calcVector3D(landmarks.hands.left.landmark[1].get(), landmarks.hands.right.landmark[1].get()).z
+        vector.z = calcVector3D(landmarks.hands.left.landmark[5].get(), landmarks.hands.right.landmark[5].get()).z
 
         if raw_point_left.y < raw_point_right.y:
             return ScreenLandmarks(
                 eye=eye,
-                origin_point=landmarks.hands.left.landmark[1].get(),
-                diagonal_point=landmarks.hands.right.landmark[1].get(),
+                origin_point=landmarks.hands.left.landmark[5].get(),
+                diagonal_point=landmarks.hands.right.landmark[5].get(),
                 horizontal_direction=vector,
                 scale=landmarks.scale
             )
