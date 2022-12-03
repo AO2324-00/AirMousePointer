@@ -1,3 +1,5 @@
 /test_input/*
 /test_output/*
 *.pyc
+*.mp4
+*.mkv
