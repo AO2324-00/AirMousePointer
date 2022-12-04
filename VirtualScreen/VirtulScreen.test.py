@@ -143,7 +143,7 @@ while cap.isOpened():
     if state == 2 and _screenLandmarks:
         _centor_point = calcMiddleVector(_screenLandmarks.origin_point.landmark, _screenLandmarks.diagonal_point.landmark)
         _origin_vector = calcVector3D(_centor_point, _screenLandmarks.origin_point.landmark)
-        plotPoint.show(_screenLandmarks.eye.landmark.z, _centor_point.z)
+        #plotPoint.show(_screenLandmarks.eye.landmark.z, _centor_point.z)
     if state == 3:
         fixedParameter = calibrationEstimator.estimation(_screenLandmarks)
     if state == 3 or not _screenLandmarks:
@@ -164,6 +164,8 @@ while cap.isOpened():
             pointer = virtualScreen.calcIntersection(screenLandmarks.eye.landmark, calcVector3D(screenLandmarks.eye.landmark, landmarks.hands.right.landmark[5]))
             image = draw_point(image, pointer)
             image = draw_line(image, (screenLandmarks.eye, LandmarkPoint(landmarks.hands.right.landmark[5], scale=landmarks.scale)))
+            #virtualScreen.calcPointerPosition(pointer)
+            print(virtualScreen.calcPointerPosition(pointer))
 
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
