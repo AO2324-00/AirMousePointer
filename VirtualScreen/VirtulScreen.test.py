@@ -10,6 +10,30 @@ from Commons.landmarks import Landmarks, ScreenLandmarks, LandmarkPoint
 from Calibration import VirtulScreenRecognizer, VirtulScreenEstimator, FixedParameter, linear_function, quadratic_function
 from VirtualScreen.VirtulScreen import calcScreenVertex, VirtualScreen
 
+import matplotlib.pyplot as plt
+class PlotPoint:
+    def __init__(self) -> None:
+        self.x = np.array([])
+        self.y = np.array([])
+        plt.xlabel('X-axis') #x軸の名前
+        plt.ylabel('Y-axis') #y軸の名前
+        plt.xlim(0,1) #x軸範囲指定
+        plt.ylim(0,1) #y軸範囲指定
+    def show(self, x, y):
+        if not x or not y:
+            return
+        #print(x, y)
+        plt.xlabel('X-axis') #x軸の名前
+        plt.ylabel('Y-axis') #y軸の名前
+        plt.xlim(-0.0,0.9) #x軸範囲指定
+        plt.ylim(-0.0,0.9) #y軸範囲指定
+        self.x = np.append(self.x, x)
+        self.y = np.append(self.y, y)
+        plt.scatter(self.x, self.y)
+        plt.draw()
+        plt.pause(0.001)
+        plt.cla()
+
 def adjust(image, alpha=1.0, beta=0.0):
     # 積和演算を行う。
     dst = alpha * image + beta
@@ -75,6 +99,8 @@ def draw_line(image, line_landmarks, color=(255, 255, 255)):
     cv2.line(annotated_image, (int(line_landmarks[0].raw_landmark.x), int(line_landmarks[0].raw_landmark.y)), (int(line_landmarks[1].raw_landmark.x), int(line_landmarks[1].raw_landmark.y)), color, thickness=2)
     return annotated_image
 
+plotPoint = PlotPoint()
+
 landmarks = Landmarks()
 calibrationRecognizer = VirtulScreenRecognizer()
 calibrationEstimator = VirtulScreenEstimator()
@@ -114,7 +140,10 @@ while cap.isOpened():
     landmarks.update(Pose, Hands, scale=Vector2D(x=width, y=height))
 
     state, _screenLandmarks = calibrationRecognizer.recognize(landmarks)
-
+    if state == 2 and _screenLandmarks:
+        _centor_point = calcMiddleVector(_screenLandmarks.origin_point.landmark, _screenLandmarks.diagonal_point.landmark)
+        _origin_vector = calcVector3D(_centor_point, _screenLandmarks.origin_point.landmark)
+        plotPoint.show(_screenLandmarks.eye.landmark.z, _centor_point.z)
     if state == 3:
         fixedParameter = calibrationEstimator.estimation(_screenLandmarks)
     if state == 3 or not _screenLandmarks:
@@ -132,11 +161,9 @@ while cap.isOpened():
     if state == 0 and screenLandmarks:
         virtualScreen = VirtualScreen(screenLandmarks)
         if landmarks.pose and landmarks.hands and landmarks.hands.right:
-            eye = calcMiddleVector(landmarks.pose.landmark[2], landmarks.pose.landmark[5])
-            pointer = virtualScreen.calcIntersection(eye, calcVector3D(eye, landmarks.hands.right.landmark[5]))
+            pointer = virtualScreen.calcIntersection(screenLandmarks.eye.landmark, calcVector3D(screenLandmarks.eye.landmark, landmarks.hands.right.landmark[5]))
             image = draw_point(image, pointer)
-            image = draw_line(image, (LandmarkPoint(eye, scale=landmarks.scale), LandmarkPoint(landmarks.hands.right.landmark[5], scale=landmarks.scale)))
-            print(eye.z, landmarks.hands.right.landmark[5].z, pointer.landmark.z)
+            image = draw_line(image, (screenLandmarks.eye, LandmarkPoint(landmarks.hands.right.landmark[5], scale=landmarks.scale)))
 
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)

@@ -16,18 +16,21 @@ class Landmark(Vector3D):
         self.tracks = np.append(self.tracks, Vector3D(x=landmark.x, y=landmark.y, z=landmark.z))
         if len(self.tracks) > self.max_track:
            self.tracks = np.delete(self.tracks, 0)
+        self.__smooth_vector = None
+        self.x = landmark.x
+        self.y = landmark.y
+        self.z = landmark.z
         landmark = self.get()
         self.x = landmark.x
         self.y = landmark.y
         self.z = landmark.z
-        self.__smooth_vector = None
 
     def get(self):
         if not self.smooth:
             return Vector3D(x=self.x, y=self.y, z=self.z)
         if len(self.tracks) <= 2:
             return Vector3D(x=self.x, y=self.y, z=self.z)
-        result = Vector3D(x=0, y=0, z=0)
+        result = Vector3D(x=self.x, y=self.y, z=self.z)
         if not self.__smooth_vector:
             for dir in ["x", "y", "z"]:
                 state = np.array([track.get(dir) for track in self.tracks])
@@ -195,7 +198,8 @@ def depth_optimizer(mediapipe_pose, mediapipe_hands, scale: Vector2D):
             hand_depth = max(length_0, length_1, length_2) * 1.1
             _pose_depth = pose_depth if pose_depth else hand_depth
             hand_depth = max(hand_depth, _pose_depth)
-            hand_depth = hand_depth + (hand_depth-_pose_depth) * 2.6
+            #hand_depth = hand_depth + max(hand_depth-_pose_depth, 0) * 2.6
+            #hand_depth = hand_depth + max(hand_depth-_pose_depth, 0) * 1.2
             hand_depth = hand_depth / scale.x
             for index in range(21):
                 mediapipe_hands.multi_hand_landmarks[i].landmark[index].z = hand_depth
@@ -220,12 +224,13 @@ class Landmarks:
                 self.hands = self.__hands = Hands(left=hands["left"], right=hands["right"], scale=self.scale)
 
     def update(self, mediapipe_pose, mediapipe_hands, scale:Vector2D=None):
+        mediapipe_pose, mediapipe_hands = depth_optimizer(mediapipe_pose, mediapipe_hands, self.scale)
         if scale:
             self.scale = scale
         if not self.__pose or not self.__hands:
             self.__initialize(mediapipe_pose, mediapipe_hands)
             return
-        depth_optimizer(mediapipe_pose, mediapipe_hands, self.scale)
+        #mediapipe_pose, mediapipe_hands = depth_optimizer(mediapipe_pose, mediapipe_hands, self.scale)
         self.pose = self.__pose.update(mediapipe_pose, scale=self.scale)
         hands = calcRelativeHandsPosition(mediapipe_pose, mediapipe_hands)
         self.hands = self.__hands.update(left=hands["left"], right=hands["right"], scale=self.scale)

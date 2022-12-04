@@ -4,7 +4,7 @@ import time as Timer
 from typing import Optional
 
 from Commons.vector import Vector2D, Vector3D, calcVector2D, calcVector3D, calcDotProduct, calcMiddleVector, calcCornerVector
-from Commons.landmarks import Landmarks, ScreenLandmarks
+from Commons.landmarks import Landmarks, LandmarkPoint, ScreenLandmarks
 
 class VirtulScreenRecognizer:
 
@@ -27,6 +27,7 @@ class VirtulScreenRecognizer:
             self.__ScreenLandmarks_list = np.array([])
             return 3, screenLandmarks
         screenLandmarks = self.__calcScreenLandmarks(landmarks)
+        #screenLandmarks = self.__adjustScreenDepth(screenLandmarks)
         self.__ScreenLandmarks_list = np.append(self.__ScreenLandmarks_list, screenLandmarks)
         return 2, screenLandmarks
 
@@ -79,6 +80,26 @@ class VirtulScreenRecognizer:
             horizontal_direction=vector,
             scale=landmarks.scale
         )
+    
+    def __adjustScreenDepth(self, screenLandmarks: ScreenLandmarks):
+        centor_point = calcMiddleVector(screenLandmarks.origin_point.landmark, screenLandmarks.diagonal_point.landmark)
+        origin_vector = calcVector3D(centor_point, screenLandmarks.origin_point.landmark)
+        #print(screenLandmarks.eye.landmark.z, centor_point.z)
+        depth = centor_point.z - screenLandmarks.eye.landmark.z
+        #print(screenLandmarks.eye.landmark.z, depth)
+        #amp = screenLandmarks.eye.landmark.z/depth
+        #amp = depth
+        #amp = 1 - depth
+        amp = 1/(depth*100)
+        print(amp)
+        #origin_vector = origin_vector.multiply(amp)
+        return ScreenLandmarks(
+            eye=screenLandmarks.eye.landmark,
+            origin_point=centor_point.addition(origin_vector),
+            diagonal_point=centor_point.subtraction(origin_vector),
+            horizontal_direction=screenLandmarks.horizontal_direction.landmark,
+            scale=screenLandmarks.scale
+        )
 
     def __calcAverage(self):
         result = {
@@ -108,8 +129,15 @@ class VirtulScreenRecognizer:
 def linear_function(X, a, b):
     return a*X[0] + b
 
-def quadratic_function(X, a, b):
-    return a*X[0]*X[0] + b
+def quadratic_function(X, a):
+    return a*X[0]*X[0]
+
+def exponential_function(X, a, b, c):
+    return a*b**X[0]+c
+
+def custom_function(X, a):
+    #return np.sqrt((X[0]+b)/a)
+    return a*X[0]*X[0] + X[0]
 
 class Parameter3D:
 
@@ -151,12 +179,12 @@ class VirtulScreenEstimator:
         center_point = Vector3D(
             x=linear_function(np.array([eye.x]), fixedParameter.centor_point.x[0], fixedParameter.centor_point.x[1]),
             y=linear_function(np.array([eye.y]), fixedParameter.centor_point.y[0], fixedParameter.centor_point.y[1]),
-            z=linear_function(np.array([eye.z]), fixedParameter.centor_point.z[0], fixedParameter.centor_point.z[1])
+            z=custom_function(np.array([eye.z]), fixedParameter.centor_point.z[0])
         )
         origin_vector = Vector3D(
-            x=quadratic_function(np.array([eye.z]), fixedParameter.origin_vector.x[0], fixedParameter.origin_vector.x[1]),
-            y=quadratic_function(np.array([eye.z]), fixedParameter.origin_vector.y[0], fixedParameter.origin_vector.y[1]),
-            z=quadratic_function(np.array([eye.z]), fixedParameter.origin_vector.z[0], fixedParameter.origin_vector.z[1])
+            x=quadratic_function(np.array([eye.z]), fixedParameter.origin_vector.x[0]),
+            y=quadratic_function(np.array([eye.z]), fixedParameter.origin_vector.y[0]),
+            z=linear_function(np.array([eye.z]), fixedParameter.origin_vector.z[0], fixedParameter.origin_vector.z[1])
         )
         return ScreenLandmarks(
             eye=eye,
@@ -190,12 +218,12 @@ class VirtulScreenEstimator:
             centor_point=Parameter3D(
                 x=curve_fit(linear_function, np.array([eye.x]), centor_point.x)[0],
                 y=curve_fit(linear_function, np.array([eye.y]), centor_point.y)[0],
-                z=curve_fit(linear_function, np.array([eye.z]), centor_point.z)[0]
+                z=curve_fit(custom_function, np.array([eye.z]), centor_point.z, maxfev=10000)[0]
             ),
             origin_vector=Parameter3D(
-                x=curve_fit(quadratic_function, np.array([eye.z]), origin_vector.x)[0],
-                y=curve_fit(quadratic_function, np.array([eye.z]), origin_vector.y)[0],
-                z=curve_fit(quadratic_function, np.array([eye.z]), origin_vector.z)[0]
+                x=curve_fit(quadratic_function, np.array([eye.z]), origin_vector.x, maxfev=10000)[0],
+                y=curve_fit(quadratic_function, np.array([eye.z]), origin_vector.y, maxfev=10000)[0],
+                z=curve_fit(linear_function, np.array([eye.z]), origin_vector.z, maxfev=10000)[0]
             ),
             horizontal_direction=Vector3D(
                 x=np.average(horizontal_direction.x),

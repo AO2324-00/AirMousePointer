@@ -89,7 +89,7 @@ class Vector3D:
         self.z = z
 
     def __repr__(self):
-        return f"x: {self.x}, y: {self.y}, z: {self.y}"
+        return f"x: {self.x}, y: {self.y}, z: {self.z}"
 
     def get(self, dir: str) -> float:
         if dir == 'x':
