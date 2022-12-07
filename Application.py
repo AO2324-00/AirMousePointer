@@ -1,3 +1,5 @@
+import sys
+import os
 import tkinter as tk
 import cv2
 from PIL import Image, ImageTk, ImageOps  # 画像データ用
@@ -15,6 +17,11 @@ SUB_COLOR_ACTIVE = "#979797"
 ICONS = {
     "setting": None
 }
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 def hover(event, *, background=None):
     if background:
@@ -37,9 +44,6 @@ class CanvasFrame(tk.Frame):
         # Canvasを配置
         self.canvas.place(x=0, y=0)
         #setting_button = tk.Button(self.master, text="OK", image=tk.PhotoImage(file="setting.png"), height=50, width=50, compound=tk.LEFT)
-        ICONS["setting"] = tk.PhotoImage(file="./Assets/setting.png")
-        ICONS["setting"] = ICONS["setting"].subsample(16)
-        setting_button = tk.Button(self.master, text="Settings", image=ICONS["setting"], height=55, width=50, compound=tk.TOP)
         #self.canvas.tag_bind("setting_button", "<Button-1>", lambda e:print("Hello"))
         #self.canvas.create_window(10, 10, anchor=tk.NW, window=setting_button)
 
@@ -116,9 +120,9 @@ class ControllerFrame(tk.Frame):
         self.height = 60
         self.config(background=BASE_COLOR, width=self.master.winfo_width(), height=self.height)
         #print(self.master.winfo_width())
-        ICONS["question"] = tk.PhotoImage(file="./Assets/question.png").subsample(18)
-        ICONS["calibration"] = tk.PhotoImage(file="./Assets/calibration.png").subsample(18)
-        ICONS["setting"] = tk.PhotoImage(file="./Assets/setting.png").subsample(18)
+        ICONS["question"] = tk.PhotoImage(file=resource_path("./Assets/question.png")).subsample(18)
+        ICONS["calibration"] = tk.PhotoImage(file=resource_path("./Assets/calibration.png")).subsample(18)
+        ICONS["setting"] = tk.PhotoImage(file=resource_path("./Assets/setting.png")).subsample(18)
         self.help_button = ControllerIconButton(self, icon=ICONS["question"], text="Help", height=self.height)
         self.calibration_button = ControllerIconButton(self, icon=ICONS["calibration"], text="Calibration", height=self.height, command=calibration)
         self.setting_button = ControllerIconButton(self, icon=ICONS["setting"], text="Settings", height=self.height)
