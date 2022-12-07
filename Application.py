@@ -120,9 +120,9 @@ class ControllerFrame(tk.Frame):
         self.height = 60
         self.config(background=BASE_COLOR, width=self.master.winfo_width(), height=self.height)
         #print(self.master.winfo_width())
-        ICONS["question"] = tk.PhotoImage(file=resource_path("./Assets/question.png")).subsample(18)
-        ICONS["calibration"] = tk.PhotoImage(file=resource_path("./Assets/calibration.png")).subsample(18)
-        ICONS["setting"] = tk.PhotoImage(file=resource_path("./Assets/setting.png")).subsample(18)
+        ICONS["question"] = tk.PhotoImage(file=resource_path("./Assets/question.png"))
+        ICONS["calibration"] = tk.PhotoImage(file=resource_path("./Assets/calibration.png"))
+        ICONS["setting"] = tk.PhotoImage(file=resource_path("./Assets/setting.png"))
         self.help_button = ControllerIconButton(self, icon=ICONS["question"], text="Help", height=self.height)
         self.calibration_button = ControllerIconButton(self, icon=ICONS["calibration"], text="Calibration", height=self.height, command=calibration)
         self.setting_button = ControllerIconButton(self, icon=ICONS["setting"], text="Settings", height=self.height)
