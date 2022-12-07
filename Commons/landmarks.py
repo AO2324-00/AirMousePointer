@@ -137,7 +137,7 @@ def calcRelativeHandsPosition(mediapipe_pose, mediapipe_hands):
     right = None
     distance_left = 1
     distance_right = 1
-    if not mediapipe_hands.multi_hand_landmarks or not mediapipe_pose.pose_landmarks:
+    if not (mediapipe_hands and mediapipe_hands.multi_hand_landmarks and mediapipe_pose and mediapipe_pose.pose_landmarks):
         return {"left": left, "right": right}
     if len(mediapipe_hands.multi_hand_landmarks) == 1:
         landmarks = mediapipe_hands.multi_hand_landmarks[0]
@@ -162,7 +162,7 @@ def calcRelativeHandsPosition(mediapipe_pose, mediapipe_hands):
 def depth_optimizer(mediapipe_pose, mediapipe_hands, scale: Vector2D):
     pose_depth = None
     hand_depth = None
-    if mediapipe_pose.pose_landmarks:
+    if mediapipe_pose and mediapipe_pose.pose_landmarks:
         """
         pose_depth = max(
             calcDistance2D(mediapipe_pose.pose_landmarks.landmark[0], mediapipe_pose.pose_landmarks.landmark[1]),
@@ -185,7 +185,7 @@ def depth_optimizer(mediapipe_pose, mediapipe_hands, scale: Vector2D):
         for i in range(33):
             mediapipe_pose.pose_landmarks.landmark[i].z = _pose_depth
 
-    if mediapipe_hands.multi_hand_landmarks:
+    if mediapipe_hands and mediapipe_hands.multi_hand_landmarks:
         for i, _ in enumerate(mediapipe_hands.multi_hand_landmarks):
             tmp_vector_0 = Vector2D.fromVector(mediapipe_hands.multi_hand_landmarks[i].landmark[0])
             tmp_vector_5 = Vector2D.fromVector(mediapipe_hands.multi_hand_landmarks[i].landmark[5])
@@ -216,7 +216,7 @@ class Landmarks:
     def __initialize(self, mediapipe_pose, mediapipe_hands, scale:Vector2D=None):
         if scale:
             self.scale = scale
-        if mediapipe_pose.pose_landmarks:
+        if mediapipe_pose and mediapipe_pose.pose_landmarks:
             if not self.__pose:
                 self.pose = self.__pose = Pose(mediapipe_pose, scale=self.scale)
             hands = calcRelativeHandsPosition(mediapipe_pose, mediapipe_hands)
