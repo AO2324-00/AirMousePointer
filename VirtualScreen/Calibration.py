@@ -38,8 +38,8 @@ class VirtulScreenRecognizer:
         index_right = calcVector2D(landmarks.hands.right.raw_landmark[5], landmarks.hands.right.raw_landmark[8])
         thumb_left = calcVector2D(landmarks.hands.left.raw_landmark[2], landmarks.hands.left.raw_landmark[4])
         thumb_right = calcVector2D(landmarks.hands.right.raw_landmark[2], landmarks.hands.right.raw_landmark[4])
-        perpendicular_left = 50 < calcDotProduct(index_left, thumb_left) < 110
-        perpendicular_right = 50 < calcDotProduct(index_right, thumb_right) < 110
+        perpendicular_left = 40 < calcDotProduct(index_left, thumb_left) < 110
+        perpendicular_right = 40 < calcDotProduct(index_right, thumb_right) < 110
         parallel = 150 < calcDotProduct(index_left, index_right)
         return perpendicular_left and perpendicular_right and parallel
 

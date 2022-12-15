@@ -15,13 +15,15 @@ class MouseEvent:
         self.pointer_offset = pointer_offset
         self.scroll_origin = None
         self.relative_origin = None
+        self._relative_origin = None
         self.__button0 = False
         self.__button1 = False
-    def update(self, pointer: Vector2D, handGesture: HandGesture, hand_dir: str):
+    def update(self, pointer: Vector2D, _pointer: Vector2D, handGesture: HandGesture, hand_dir: str):
         if not pointer or not handGesture:
             return
         pointer_max_distance = calcDistance2D(Vector2D(x=0, y=0), self.screen_size)*0.5
         pointer = calcPointerPosition(pointer, self.screen_size)
+        _pointer = calcPointerPosition(_pointer, self.screen_size)
 
         if hand_dir == "right":
             pointer = pointer.subtraction(self.pointer_offset)
@@ -31,7 +33,7 @@ class MouseEvent:
         
         if self.__scroll(pointer, handGesture):
             return
-        if not self.__relative(pointer, handGesture):
+        if not self.__relative(pointer, _pointer, handGesture):
 
             if not (-pointer_max_distance < pointer.x < self.screen_size.x + pointer_max_distance and -pointer_max_distance < pointer.y < self.screen_size.y + pointer_max_distance):
                 return
@@ -40,9 +42,9 @@ class MouseEvent:
             if pointer.y < 0:
                 pointer.y = 0
             if self.screen_size.x < pointer.x+10:
-                pointer.x = self.screen_size.x
+                pointer.x = self.screen_size.x-10
             if self.screen_size.y < pointer.y+10:
-                pointer.y = self.screen_size.y
+                pointer.y = self.screen_size.y-10
 
             mouse.move(int(pointer.x), int(pointer.y), True)
 
@@ -83,15 +85,19 @@ class MouseEvent:
             keyboard.release('shift')
         return True
     
-    def __relative(self, pointer: Vector2D, handGesture: HandGesture, amp=0.1):
+    def __relative(self, pointer: Vector2D, _pointer: Vector2D, handGesture: HandGesture, amp=0.25):
         if not handGesture.relative:
             self.relative_origin = None
+            self._relative_origin = None
             return False
         if not self.relative_origin:
             self.relative_origin = pointer
+            self._relative_origin = _pointer
             return True
-        delta = calcVector2D(self.relative_origin, pointer)
+        delta = calcVector2D(self._relative_origin, _pointer)
+        #print(delta)
         pointer = self.relative_origin.addition(delta.multiply(amp))
+        #print(pointer)
         mouse.move(int(pointer.x), int(pointer.y), True)
         return True
 

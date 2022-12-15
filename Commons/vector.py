@@ -36,6 +36,7 @@ class Vector2D:
             self.x = value
         elif dir == 'y':
             self.y = value
+        return self
 
 
     def parseArray(self) -> ndarray:
@@ -108,6 +109,7 @@ class Vector3D:
             self.y = value
         elif dir == 'z':
             self.z = value
+        return self
 
 
     def parseArray(self) -> ndarray:

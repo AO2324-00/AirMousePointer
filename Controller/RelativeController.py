@@ -6,28 +6,23 @@ import mediapipe as mp
 import numpy as np
 
 from Commons.Draw import Draw
-from Commons.vector import Vector3D, Vector2D, calcMiddleVector, calcVector3D
+from Commons.vector import Vector3D, Vector2D, calcMiddleVector, calcVector3D, calcDistance2D
 from Commons.landmarks import Landmark, Landmarks, ScreenLandmarks, LandmarkPoint
 from UserRecognition.UserRecognition import userRecognition
 from VirtualScreen.Calibration import VirtulScreenRecognizer, VirtulScreenEstimator, FixedParameter, linear_function, quadratic_function
 from VirtualScreen.VirtulScreen import calcScreenVertex, VirtualScreen, calcPointerPosition
 from HandGesture.HandGesture import HandGesture, handGestureRecognition
+from Controller.Controller import ControllerState
 
 
-class ControllerState:
-    def __init__(self, lefty=False) -> None:
-        self.mode = "relative"
-        self.calibrating = False
-        self.lefty = lefty
-
-class Controller:
-    def __init__(self, *, controllerState: ControllerState, fixedParameter: FixedParameter=None) -> None:
+class RelativeController:
+    def __init__(self, *, controllerState: ControllerState) -> None:
         self.controllerState = controllerState
-        self.fixedParameter = fixedParameter
 
         self.landmarks = Landmarks()
         self.calibrationRecognizer = VirtulScreenRecognizer()
         self.calibrationEstimator = VirtulScreenEstimator()
+        self.relativeVirtualScreen = RelativeVirtualScreen()
         self.screenLandmarks = None
         self.scale=None
         self.tracking = False
@@ -36,20 +31,22 @@ class Controller:
     def update(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        Pose, Hands, user_box, self.tracking = userRecognition(image, screen=self.fixedParameter, tracking=self.tracking)
+        Pose, Hands, user_box, self.tracking = userRecognition(image, screen=None, tracking=self.tracking)
 
         if not self.tracking:
             image = cv2.flip(image, 1)
-            return image, None, None, None, None
+            return image, None, None, None
 
         height, width, _ = image.shape
         self.scale = Vector2D(x=width, y=height)
         self.landmarks.update(Pose, Hands, scale=self.scale)
 
+        """
         if not self.landmarks.hands or (not self.landmarks.hands.left and not self.landmarks.hands.right):
             image = cv2.flip(image, 1)
-            return image, None, None, None, None
-
+            return image, None, None, None
+        """
+        
         image = self.__calibration(image)
 
         use_hand = None
@@ -67,6 +64,7 @@ class Controller:
 
         handGesture: HandGesture = handGestureRecognition(use_hand)
 
+
         if user_box is not None:
             image = Draw.screenPanel(image, user_box)
         if self.landmarks.pose:
@@ -81,47 +79,61 @@ class Controller:
             pointer = Vector2D(x=pointer.x, y=pointer.y)
 
         image = cv2.flip(image, 1)
-        return image, pointer, use_hand.landmark[5], handGesture, hand_dir
-
+        return image, pointer, handGesture, hand_dir
 
     def __calibration(self, image):
-        state, _screenLandmarks = None, None
-        if self.controllerState.calibrating:
-            state, _screenLandmarks = self.calibrationRecognizer.recognize(self.landmarks)
+        #state, _screenLandmarks = None, None
+
+        state, _screenLandmarks = self.calibrationRecognizer.recognize(self.landmarks)
 
         if state == 3:
-            self.fixedParameter = self.calibrationEstimator.estimation(_screenLandmarks)
+            self.relativeVirtualScreen.calibration(_screenLandmarks)
         if state == 3 or not _screenLandmarks:
-            screenLandmarks = self.calibrationEstimator.calcScreenLandmarks(self.landmarks, self.fixedParameter)
+            screenLandmarks = self.relativeVirtualScreen.update(calcMiddleVector(self.landmarks.pose.landmark[2].get(), self.landmarks.pose.landmark[5].get()))
             self.screenLandmarks = screenLandmarks if screenLandmarks else self.screenLandmarks
+
         if _screenLandmarks:
             image = Draw.screenPanel(image, calcScreenVertex(_screenLandmarks), color=(150, 245, 250), thickness=2)
         elif self.screenLandmarks:
-            image = image = Draw.screenBox(image, self.screenLandmarks.eye, calcScreenVertex(self.screenLandmarks))
+            image = Draw.screenPanel(image, calcScreenVertex(self.screenLandmarks))
+
         return image
 
     def __pointer(self, image, hand):
         if not self.screenLandmarks or not hand:
             return image, None
 
-        virtualScreen = VirtualScreen(self.screenLandmarks)
-        pointer = virtualScreen.calcIntersection(self.screenLandmarks.eye.landmark, calcVector3D(self.screenLandmarks.eye.landmark, hand.landmark[5]))
+        vertex = calcScreenVertex(self.screenLandmarks)
+        for i, landmarkPoint in enumerate(vertex):
+            vertex[i] = LandmarkPoint(Vector3D(x=landmarkPoint.landmark.x, y=landmarkPoint.landmark.y, z=0))
+        pointer = LandmarkPoint(Vector3D.fromVector(hand.landmark[5]).set("z", 0), scale=self.landmarks.scale)
         image = Draw.hands(image, self.landmarks.hands, thickness=1)
         image = Draw.point(image, pointer)
-        image = Draw.line(image, self.screenLandmarks.eye, LandmarkPoint(hand.landmark[5], scale=self.landmarks.scale))
         #return image, virtualScreen.calcPointerPosition(pointer)
-        return image, calcPointerPosition(virtualScreen.getVertex(), pointer)
-        
+        return image, calcPointerPosition(vertex, pointer)
+
+class RelativeVirtualScreen:
+    def __init__(self) -> None:
+        self.__screenLandmarks : ScreenLandmarks = None
     
-    def applyCalibration(self):
-        if not self.controllerState.calibrating:
+    def calibration(self, screenLandmarks: ScreenLandmarks):
+        self.__screenLandmarks = screenLandmarks
+
+    def update(self, eye):
+        if not self.__screenLandmarks:
             return None
-        self.controllerState.calibrating = False
-        return self.fixedParameter
-    
-    def cancelCalibration(self, fixedParameter: FixedParameter):
-        if not self.controllerState.calibrating:
-            return False
-        self.fixedParameter = fixedParameter
-        self.controllerState.calibrating = False
-        return True
+        vector = Vector3D.fromVector(self.__screenLandmarks.eye.landmark).subtraction(eye)
+        vector_distance = eye.z - Vector3D.fromVector(self.__screenLandmarks.eye.landmark).z
+        center_point = calcMiddleVector(self.__screenLandmarks.origin_point.landmark, self.__screenLandmarks.diagonal_point.landmark)
+        origin_vector = calcVector3D(center_point, self.__screenLandmarks.origin_point.landmark)
+        origin_distance = calcDistance2D(center_point, self.__screenLandmarks.origin_point.landmark)
+        origin_vector = origin_vector.multiply((origin_distance+vector_distance*2)/origin_distance)
+        #print(vector_distance, origin_distance, (origin_distance+vector_distance)/origin_distance,  origin_distance*(origin_distance+vector_distance)/origin_distance)
+        center_point = center_point.subtraction(vector)
+        return ScreenLandmarks(
+            eye=eye,
+            origin_point=center_point.addition(origin_vector),
+            diagonal_point=center_point.subtraction(origin_vector),
+            horizontal_direction=Vector3D.fromVector(self.__screenLandmarks.horizontal_direction.landmark),
+            scale=self.__screenLandmarks.scale
+        )

@@ -70,3 +70,27 @@ class VirtualScreen:
             x=x_sign*pointer_x,
             y=y_sign*pointer_y
         )
+
+def calcPointerPosition(vertex, landmark: LandmarkPoint):
+    pointer = Vector3D.fromVector(landmark.landmark)
+    origin = Vector3D.fromVector(vertex[0].landmark)
+    x_end = Vector3D.fromVector(vertex[1].landmark)
+    X_vector = calcVector3D(origin, x_end)
+    y_end = Vector3D.fromVector(vertex[-1].landmark)
+    Y_vector = calcVector3D(origin, y_end)
+    x = calcCornerVector(pointer, origin, X_vector)
+    y = calcCornerVector(pointer, origin, Y_vector)
+    origin_to_x = calcDistance3D(origin, x)
+    origin_to_y = calcDistance3D(origin, y)
+    x_to_end = calcDistance3D(x, x_end)
+    y_to_end = calcDistance3D(y, y_end)
+    x_distance_max = calcDistance3D(origin, x_end)
+    y_distance_max = calcDistance3D(origin, y_end)
+    pointer_x = origin_to_x/x_distance_max
+    pointer_y = origin_to_y/y_distance_max
+    x_sign = 1 if x_to_end < x_distance_max or x_to_end < origin_to_x else -1
+    y_sign = 1 if y_to_end < y_distance_max or y_to_end < origin_to_y else -1
+    return Vector2D(
+        x=x_sign*pointer_x,
+        y=y_sign*pointer_y
+    )

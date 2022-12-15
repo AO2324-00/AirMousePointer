@@ -12,7 +12,8 @@ class HandGesture():
         return f"button0: {self.button0}, button1: {self.button1}, scroll: {self.scroll}, relative: {self.relative}"
 
 def handGestureFront(hand: Hand):
-    threshold = max(calcDistance2D(hand.raw_landmark[5], hand.raw_landmark[9]), calcDistance2D(hand.raw_landmark[2], hand.raw_landmark[3])) * 1.3
+    #threshold = max(calcDistance2D(hand.raw_landmark[5], hand.raw_landmark[9]), calcDistance2D(hand.raw_landmark[2], hand.raw_landmark[3])) * 1.3
+    threshold = max(calcDistance2D(hand.raw_landmark[5], hand.raw_landmark[9]), calcDistance2D(hand.raw_landmark[2], hand.raw_landmark[3])) * 1.7
     thumb_tip = hand.raw_landmark[4]
     index_tip = hand.raw_landmark[8]
     middle_tip = hand.raw_landmark[12]
@@ -41,7 +42,8 @@ def handGestureFront(hand: Hand):
     )
 
 def handGestureSide(hand: Hand):
-    threshold = max(calcDistance2D(hand.raw_landmark[1], hand.raw_landmark[2]), calcDistance2D(hand.raw_landmark[2], hand.raw_landmark[3]))
+    #threshold = max(calcDistance2D(hand.raw_landmark[1], hand.raw_landmark[2]), calcDistance2D(hand.raw_landmark[2], hand.raw_landmark[3]))
+    threshold = max(calcDistance2D(hand.raw_landmark[1], hand.raw_landmark[2]), calcDistance2D(hand.raw_landmark[2], hand.raw_landmark[3])) * 1.5
     thumb_tip = hand.raw_landmark[4]
     index_tip = hand.raw_landmark[8]
     middle_tip = hand.raw_landmark[12]
