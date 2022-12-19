@@ -1,11 +1,10 @@
-import sys
-import os
 import tkinter as tk
 import cv2
 from PIL import Image, ImageTk, ImageOps  # 画像データ用
 
+from Commons.mod import resource_path
 from Commons.vector import Vector2D
-from Controller.Controller import Controller, ControllerState
+from Controller.Controller import Controller
 from Controller.RelativeController import RelativeController
 from Controller.MouseEvent import MouseEvent
 
@@ -23,11 +22,6 @@ class Icons:
         self.calibration = tk.PhotoImage(file=resource_path("./Assets/calibration.png"))
         self.setting = tk.PhotoImage(file=resource_path("./Assets/setting.png"))
         self.clear = tk.PhotoImage(file=resource_path("./Assets/clear.png"))
-
-def resource_path(relative_path):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
 
 def hover(event, *, background=None):
     if background:
@@ -174,7 +168,7 @@ class CalibrationFrame(tk.Frame):
         self.config(width=width)
 
 class Application(tk.Frame):
-    def __init__(self, master=tk.Tk()):
+    def __init__(self, *, master=tk.Tk(), controllerState):
         super().__init__(master)
         self.master.geometry("800x700")
         self.master.configure(background=BASE_COLOR)
@@ -186,7 +180,7 @@ class Application(tk.Frame):
         self.name = 'AirMousePointer α'
         self.master.title(f"{self.name}  |  Relative mode")
         self.master.minsize(300, 60)
-        self.controller_state = ControllerState()
+        self.controller_state = controllerState
         self.ICONS = Icons()
         self.canvasFrame = CanvasFrame(self)
         self.controllerFrame = ControllerFrame(self, switch=lambda:self.switch_mode("relative"), calibration=self.start_calibration)
@@ -197,19 +191,19 @@ class Application(tk.Frame):
         #canvasFrame.grid()
         #self.controllerFrame.grid(row=1, column=0, sticky=tk.NSEW)
         #self.controllerFrame.pack(side=tk.BOTTOM)
-        self.relativeControllerFrame.pack(side=tk.BOTTOM)
+        self.switch_mode(self.controller_state.mode)
         self.pack()
         self.resize()
         self.mainloop()
 
     def switch_mode(self, mode: str):
         if mode == "relative":
-            self.controller_state.mode = "relative"
+            self.controller_state.setMode("relative")
             self.master.title(f"{self.name}  |  Relative mode")
             self.controllerFrame.pack_forget()
             self.relativeControllerFrame.pack(side=tk.BOTTOM)
         elif mode == "absolute":
-            self.controller_state.mode = "absolute"
+            self.controller_state.setMode("absolute")
             self.master.title(f"{self.name}  |  Absolute mode")
             self.relativeControllerFrame.pack_forget()
             self.controllerFrame.pack(side=tk.BOTTOM)
