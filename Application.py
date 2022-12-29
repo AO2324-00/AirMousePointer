@@ -2,11 +2,12 @@ import tkinter as tk
 import cv2
 from PIL import Image, ImageTk, ImageOps  # 画像データ用
 
-from Commons.mod import resource_path
+from Commons.mod import resource_path, adjust
 from Commons.vector import Vector2D
 from Controller.Controller import Controller
 from Controller.RelativeController import RelativeController
 from Controller.MouseEvent import MouseEvent
+from Config import ControllerState
 
 BASE_COLOR = "white"
 BASE_COLOR_ACTIVE = "#dddddd"
@@ -64,6 +65,8 @@ class CanvasFrame(tk.Frame):
         if not success:
             self.master.after(self.delay, self.update)
             return
+
+        cv_image = adjust(cv_image, self.master.controller_state.contrast, self.master.controller_state.brightness)
 
         #print(self.master.controller_state)
         if self.master.controller_state.mode == "relative":
@@ -131,7 +134,7 @@ class ControllerFrame(tk.Frame):
         self.help_button = ControllerIconButton(self, icon=self.master.ICONS.question, text="Help", height=self.height)
         self.switch_button = ControllerIconButton(self, icon=self.master.ICONS.switch, text="Switch mode", height=self.height, command=switch)
         self.calibration_button = ControllerIconButton(self, icon=self.master.ICONS.calibration, text="Calibration", height=self.height, command=calibration)
-        self.setting_button = ControllerIconButton(self, icon=self.master.ICONS.setting, text="Settings", height=self.height)
+        self.setting_button = ControllerIconButton(self, icon=self.master.ICONS.setting, text="Settings", height=self.height, command=self.master.openSettings)
 
 
     def resize(self, width):
@@ -147,25 +150,69 @@ class RelativeControllerFrame(tk.Frame):
         self.help_button = ControllerIconButton(self, icon=self.master.ICONS.question, text="Help", height=self.height)
         self.switch_button = ControllerIconButton(self, icon=self.master.ICONS.switch, text="Switch mode", height=self.height, command=switch)
         self.clear_button = ControllerIconButton(self, icon=self.master.ICONS.clear, text="Clear", height=self.height, command=clear)
-        self.setting_button = ControllerIconButton(self, icon=self.master.ICONS.setting, text="Settings", height=self.height)
+        self.setting_button = ControllerIconButton(self, icon=self.master.ICONS.setting, text="Settings", height=self.height, command=self.master.openSettings)
 
 
     def resize(self, width):
         self.config(width=width)
 
 class CalibrationFrame(tk.Frame):
-    def __init__(self, master=None, *, close_event):
+    def __init__(self, master=None, *, canvasFrame, controllerState: ControllerState,  close_event):
         super().__init__(master)
+        self.canvasFrame = canvasFrame
+        self.controllerState: ControllerState = controllerState
+        self.close_event = close_event
         self.pack_propagate(0)
         self.height = 60
         self.config(background=BASE_COLOR, width=800, height=self.height)
         self.help_button = ControllerIconButton(self, icon=self.master.ICONS.question, text=None, width=60, height=self.height, expand=False)
-        self.apply_button = ControllerTextButton(self, text="Apply", width=9, height=4, color="white" ,background=ACCENT_COLOR, background_hover=ACCENT_COLOR_ACTIVE, command=close_event)
-        self.cancel_button = ControllerTextButton(self, text="Cancel", width=9, height=4, color="black" ,background=SUB_COLOR, background_hover=SUB_COLOR_ACTIVE, command=close_event)
+        self.apply_button = ControllerTextButton(self, text="Apply", width=9, height=4, color="white" ,background=ACCENT_COLOR, background_hover=ACCENT_COLOR_ACTIVE, command=self.__apply)
+        self.cancel_button = ControllerTextButton(self, text="Cancel", width=9, height=4, color="black" ,background=SUB_COLOR, background_hover=SUB_COLOR_ACTIVE, command=self.__cancel)
 
+    def start(self):
+        self.canvasFrame.controller.startCalibration()
+
+    def __apply(self):
+        self.controllerState.setFixedparameter(self.canvasFrame.controller.applyCalibration())
+        self.close_event()
+
+    def __cancel(self):
+        self.canvasFrame.controller.cancelCalibration(self.controllerState.fixedParameter)
+        self.close_event()
 
     def resize(self, width):
         self.config(width=width)
+
+class SettingFrame(tk.Frame):
+
+    def __init__(self, master, root=None):
+        super().__init__(master)
+        self.root = root
+        self.master.title("Settings") # ウィンドウタイトル
+        self.master.geometry("400x100")   # ウィンドウサイズ(幅x高さ)
+        self.master.resizable(0, 0) 
+        self.master.wm_iconbitmap(resource_path('.\\Assets\\favicon.ico'))
+        
+        # モーダルにする設定
+        self.master.grab_set()        # モーダルにする
+        self.master.focus_set()       # フォーカスを新しいウィンドウをへ移す
+        #self.master.transient(self.master)   # タスクバーに表示しない
+        self.__setup()
+
+        # ダイアログが閉じられるまで待つ
+        self.root.wait_window(self.master)
+        
+
+    def __setup(self):
+        contrast_label = tk.Label(self.master, text="Contrast").grid(row=2, column=0, pady=4, padx = 4)
+        brightness_label = tk.Label(self.master, text="Brightness").grid(row=4, column=0, pady=4, padx = 4)
+        contrast_input = tk.Scale(self.master, from_=0.0, to=2.0, resolution=0.05, orient=tk.HORIZONTAL, length= 300, showvalue=False, command=lambda e:self.root.controller_state.setContrast(contrast_input.get()))
+        contrast_input.set(self.root.controller_state.contrast)
+        brightness_input = tk.Scale(self.master, from_=-120, to=120, resolution=1, orient=tk.HORIZONTAL, length= 300, showvalue=False, command=lambda e:self.root.controller_state.setBrightness(brightness_input.get()))
+        brightness_input.set(self.root.controller_state.brightness)
+        contrast_input.grid(row = 2, column = 1, pady=4, padx = 4)
+        brightness_input.grid(row = 4, column = 1, pady=4, padx = 4)
+        self.master.grid_columnconfigure(1, weight=1)
 
 class Application(tk.Frame):
     def __init__(self, *, master=tk.Tk(), controllerState):
@@ -184,8 +231,9 @@ class Application(tk.Frame):
         self.ICONS = Icons()
         self.canvasFrame = CanvasFrame(self)
         self.controllerFrame = ControllerFrame(self, switch=lambda:self.switch_mode("relative"), calibration=self.start_calibration)
-        self.relativeControllerFrame = RelativeControllerFrame(self, switch=lambda:self.switch_mode("absolute"), clear=None)
-        self.calibrationFrame = CalibrationFrame(self, close_event=self.end_calibration)
+        self.relativeControllerFrame = RelativeControllerFrame(self, switch=lambda:self.switch_mode("absolute"), clear=self.clearRelativeScreen)
+        self.calibrationFrame = CalibrationFrame(self, canvasFrame=self.canvasFrame, controllerState=controllerState, close_event=self.end_calibration)
+        self.settingsFrame = None
         #self.canvasFrame.grid(row=0, column=0, sticky=tk.NSEW)
         self.canvasFrame.pack(side=tk.TOP)
         #canvasFrame.grid()
@@ -208,12 +256,18 @@ class Application(tk.Frame):
             self.relativeControllerFrame.pack_forget()
             self.controllerFrame.pack(side=tk.BOTTOM)
     
+    def clearRelativeScreen(self):
+        self.canvasFrame.relativeController.relativeVirtualScreen.clear()
+        self.canvasFrame.relativeController.screenLandmarks = None
+        self.controller_state.setScreenLandmarks(None)
+
     def start_calibration(self):
         self.master.title(f"{self.name}  |  Absolute mode - Calibrating...")
         self.controllerFrame.pack_forget()
         self.calibrationFrame.pack(side=tk.BOTTOM)
         self.calibrationFrame.apply_button.config(background=ACCENT_COLOR)
         self.calibrationFrame.cancel_button.config(background=SUB_COLOR)
+        self.calibrationFrame.start()
         self.controller_state.calibrating = True
 
     def end_calibration(self):
@@ -221,6 +275,9 @@ class Application(tk.Frame):
         self.calibrationFrame.pack_forget()
         self.controllerFrame.pack(side=tk.BOTTOM)
         self.controller_state.calibrating = False
+
+    def openSettings(self):
+        self.settingsFrame = SettingFrame(master=tk.Toplevel(), root=self)
 
     def resize(self):
         width = max(self.master.winfo_width(), 300)

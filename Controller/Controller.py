@@ -12,18 +12,12 @@ from UserRecognition.UserRecognition import userRecognition
 from VirtualScreen.Calibration import VirtulScreenRecognizer, VirtulScreenEstimator, FixedParameter, linear_function, quadratic_function
 from VirtualScreen.VirtulScreen import calcScreenVertex, VirtualScreen, calcPointerPosition
 from HandGesture.HandGesture import HandGesture, handGestureRecognition
-
-
-class ControllerState:
-    def __init__(self, lefty=False) -> None:
-        self.mode = "relative"
-        self.calibrating = False
-        self.lefty = lefty
+from Config import ControllerState
 
 class Controller:
-    def __init__(self, *, controllerState: ControllerState, fixedParameter: FixedParameter=None) -> None:
+    def __init__(self, *, controllerState: ControllerState) -> None:
         self.controllerState = controllerState
-        self.fixedParameter = fixedParameter
+        self.fixedParameter = controllerState.fixedParameter
 
         self.landmarks = Landmarks()
         self.calibrationRecognizer = VirtulScreenRecognizer()
@@ -112,6 +106,9 @@ class Controller:
         #return image, virtualScreen.calcPointerPosition(pointer)
         return image, calcPointerPosition(virtualScreen.getVertex(), pointer)
         
+    def startCalibration(self):
+        self.fixedParameter = None
+        self.screenLandmarks = None
     
     def applyCalibration(self):
         if not self.controllerState.calibrating:

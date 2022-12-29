@@ -25,10 +25,11 @@ class MouseEvent:
         pointer = calcPointerPosition(pointer, self.screen_size)
         _pointer = calcPointerPosition(_pointer, self.screen_size)
 
-        if hand_dir == "right":
-            pointer = pointer.subtraction(self.pointer_offset)
-        elif hand_dir == "left":
-            pointer = pointer.addition(self.pointer_offset)
+        if self.controllerState.mode == "absolute":
+            if hand_dir == "right":
+                pointer = pointer.subtraction(self.pointer_offset)
+            elif hand_dir == "left":
+                pointer = pointer.addition(self.pointer_offset)
 
         
         if self.__scroll(pointer, handGesture):

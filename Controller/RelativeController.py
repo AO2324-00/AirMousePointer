@@ -12,7 +12,7 @@ from UserRecognition.UserRecognition import userRecognition
 from VirtualScreen.Calibration import VirtulScreenRecognizer, VirtulScreenEstimator, FixedParameter, linear_function, quadratic_function
 from VirtualScreen.VirtulScreen import calcScreenVertex, VirtualScreen, calcPointerPosition
 from HandGesture.HandGesture import HandGesture, handGestureRecognition
-from Controller.Controller import ControllerState
+from Config import ControllerState
 
 
 class RelativeController:
@@ -22,7 +22,7 @@ class RelativeController:
         self.landmarks = Landmarks()
         self.calibrationRecognizer = VirtulScreenRecognizer()
         self.calibrationEstimator = VirtulScreenEstimator()
-        self.relativeVirtualScreen = RelativeVirtualScreen()
+        self.relativeVirtualScreen = RelativeVirtualScreen(controllerState.screenLandmarks)
         self.screenLandmarks = None
         self.scale=None
         self.tracking = False
@@ -90,7 +90,9 @@ class RelativeController:
             self.relativeVirtualScreen.calibration(_screenLandmarks)
         if state == 3 or not _screenLandmarks:
             screenLandmarks = self.relativeVirtualScreen.update(calcMiddleVector(self.landmarks.pose.landmark[2].get(), self.landmarks.pose.landmark[5].get()))
-            self.screenLandmarks = screenLandmarks if screenLandmarks else self.screenLandmarks
+            if screenLandmarks:
+                self.controllerState.setScreenLandmarks(screenLandmarks)
+                self.screenLandmarks = screenLandmarks
 
         if _screenLandmarks:
             image = Draw.screenPanel(image, calcScreenVertex(_screenLandmarks), color=(150, 245, 250), thickness=2)
@@ -113,8 +115,11 @@ class RelativeController:
         return image, calcPointerPosition(vertex, pointer)
 
 class RelativeVirtualScreen:
-    def __init__(self) -> None:
-        self.__screenLandmarks : ScreenLandmarks = None
+    def __init__(self, screenLandmarks: ScreenLandmarks) -> None:
+        self.__screenLandmarks : ScreenLandmarks = screenLandmarks
+
+    def clear(self):
+        self.__screenLandmarks = None
     
     def calibration(self, screenLandmarks: ScreenLandmarks):
         self.__screenLandmarks = screenLandmarks

@@ -19,12 +19,12 @@ hands =  mp.solutions.hands.Hands(
 pose = mp.solutions.pose.Pose(
     static_image_mode = False,      # 単体の画像かどうか(Falseの場合は入力画像を連続したものとして扱います)。
     #enable_segmentation = True,
-    model_complexity = 0,           # ランドマークモデルの複雑さ(0 or 1 or 2)。
+    model_complexity = 1,           # ランドマークモデルの複雑さ(0 or 1 or 2)。
     #min_detection_confidence = 0.7, # 検出が成功したと見なされるための最小信頼値(0.0 ~ 1.0)。
     min_detection_confidence = 0.5,
     min_tracking_confidence = 0.5   # 前のフレームからランドマークが正常に追跡されたとみなされるための最小信頼度(0.0 ~ 1.0)。
 )
-selfie_segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=0)
+#selfie_segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
 class Tracker:
     hand_tracking = False
 
@@ -58,7 +58,6 @@ def userRecognition(image, *, screen=None, max=5, tracking=False):
     Hands = hands.process(masked_image)
     Tracker.hand_tracking = Hands.multi_hand_landmarks and 2 <= len(Hands.multi_hand_landmarks)
     #Hands = hands.process(original_image)
-    #cv2.imshow('masked_image', cv2.flip(Pose.segmentation_mask, 1))
     #cv2.imshow('masked_image', cv2.flip(masked_image, 1))
 
     return Pose, Hands, user_box, tracking
@@ -73,7 +72,7 @@ def getMaskedImage(image, Pose, *, isInside: bool, original_image):
     y = [int(lmk[1]) for lmk in pose_landmark]
     min_x, min_y = min(x), min(y)
     max_x, max_y = max(x), max(y)
-    margin = int(min(max_x-min_x, max_y-min_y) / 8)
+    margin = int(min(max_x-min_x, max_y-min_y) / 5)
     min_x, min_y = max(min_x-margin*1.5,0), max(min_y-margin*2,0)
     max_x, max_y = min(max_x+margin*1.5,frame_width-1), min(max_y+margin*2,frame_height-1)
     min_x, min_y = int(min_x), int(min_y)
@@ -87,13 +86,14 @@ def getMaskedImage(image, Pose, *, isInside: bool, original_image):
         mask = np.zeros((frame_height, frame_width,3), np.uint8)
         mask = cv2.rectangle(mask, (min_x,min_y),(max_x,max_y),(255,255,255), -1)
         masked_image = cv2.bitwise_and(original_image, mask)
+        """
         if not Tracker.hand_tracking:
             segmentation = selfie_segmentation.process(masked_image)
             condition = np.stack((segmentation.segmentation_mask,) * 3, axis=-1) > 0.1
             bg_image = np.zeros(image.shape, dtype=np.uint8)
             bg_image[:] = (192, 192, 192)
             masked_image = np.where(condition, original_image, bg_image)
-
+        """
         height, width, _ = original_image.shape
         scale = Vector2D(x=width, y=height)
         min_x, min_y = min_x/scale.x, min_y/scale.y
