@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST</title>
+</head>
+<style>
+    :root {
+        user-select: none;
+        --target-color: rgb(226, 77, 77);
+    }
+    html, body {
+        display: flex;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+    section {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+    main {
+        position: relative;
+        border: solid 2px gray;
+    }
+    h1 {
+        font-size: 3vmin;
+        margin: 0.25vmin;
+    }
+    button {
+        font-size: 1.5vmin;
+        padding: 0.7vmin 2vmin;
+        margin: 0.7vmin;
+    }
+    .target {
+        display: inline-block;
+        position: absolute;
+        background-color: var(--target-color);
+        cursor: pointer;
+    }
+    .target:hover {
+        opacity: 0.7;
+    }
+    #config {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px;
+    }
+    #config > .sumple {
+        margin: 10px;
+        z-index: -1;
+    }
+    #config > .option {
+        height: 100%;
+        max-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+    }
+    #counter {
+        font-size: 5vmin;
+    }
+    #result {
+        font-size: 2vmin;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        max-width: 95vw;
+    }
+</style>
+<body>
+    <section id="scene_main">
+        <main>
+
+        </main>
+    </section>
+    <section id="scene_notice">
+        <div id="notice">
+
+        </div>
+    </section>
+    <section id="scene_start">
+        <h1>AirMousePointer TEST</h1>
+        <div id="config">
+            <div class="sumple">
+                <span class="target" style="position: relative;"></span>
+            </div>
+            <div class="option">
+                <label>Target size&nbsp;<input id="input_target_size" type="number">px</label>
+                <label>Screen width&nbsp;<input id="input_area_width" type="number">px</label>
+                <label>Screen height&nbsp;<input id="input_area_height" type="number">px</label>
+            </div>
+        </div>
+        <button id="input_start">Start</button>
+    </section>
+    <style id="variable_style"></style>
+</body>
+<script type="text/javascript">
+"use strict";
+(function(){
+const scene = {
+    start: document.getElementById("scene_start"),
+    notice: document.getElementById("scene_notice"),
+    main: document.getElementById("scene_main"),
+};
+const main = document.getElementsByTagName("main").item(0);
+const notice = document.getElementById("notice");
+const variable_style = document.getElementById("variable_style");
+const input = {
+    target_size: document.getElementById("input_target_size"),
+    area_width: document.getElementById("input_area_width"),
+    area_height: document.getElementById("input_area_height"),
+    start: document.getElementById("input_start"),
+}
+
+const editStyle = e => {
+    variable_style.innerHTML = 
+        `.target {
+            width: ${input.target_size.value}px;
+            height: ${input.target_size.value}px;
+        }`;
+    main.style.width = `${input.area_width.value}px`;
+    main.style.height = `${input.area_height.value}px`;
+};
+
+(function init() {
+    input.target_size.value = 50;
+    input.area_width.value = Math.floor(Math.max(10, document.body.clientWidth*0.9));
+    input.area_height.value = Math.floor(Math.max(10, document.body.clientHeight*0.9));
+    editStyle();
+    input.target_size.oninput = editStyle;
+    input.area_width.oninput = editStyle;
+    input.area_height.oninput = editStyle;
+    input.start.onclick = startTest;
+})();
+
+
+class TargetClicker {
+    #timer = null;
+    #result = [];
+    constructor(element=main, MAX=10) {
+        TargetClicker.MAX = MAX;
+        TargetClicker.element = element;
+        this.count = 0;
+    }
+
+    #getLapTime() {
+        if(!this.#timer) return null;
+        const now = new Date();
+        const time = now.getTime() - this.#timer.getTime();
+        this.#timer = now;
+        return time
+    }
+
+    start() {
+        if(this.#timer) return;
+        this.#timer = new Date();
+        this.#result = [];
+        return new Promise(resolve=>this.#createNewTarget(resolve));
+    }
+
+    #targetClicked(event, resolve) {
+        console.log("click!");
+        event.target.remove();
+        this.#result.push(this.#getLapTime());
+        if(++this.count < TargetClicker.MAX) {
+            this.#createNewTarget(resolve);
+        } else {
+            this.#finish(resolve);
+        }
+    }
+
+    #createNewTarget(resolve) {
+        const target = document.createElement("span");
+        target.className = "target";
+        target.onclick = event=>this.#targetClicked(event, resolve);
+        TargetClicker.element.appendChild(target);
+        target.style.top = `${Math.random()*(TargetClicker.element.clientHeight-target.clientHeight)}px`;
+        target.style.left = `${Math.random()*(TargetClicker.element.clientWidth-target.clientWidth)}px`;
+    }
+
+    #finish(resolve) {
+        this.count = 0;
+        this.#timer = null;
+        resolve(this.#result);
+    }
+}
+
+async function startTest() {
+    scene.start.style.display = "none";
+    await showCountdown();
+    const targetClicker = new TargetClicker();
+    const result = await targetClicker.start();
+    showResult(result);
+}
+
+async function showCountdown() {
+    scene.notice.style.display = "flex";
+    const counter = document.createElement("span");
+    counter.id = "counter";
+    scene.notice.appendChild(counter);
+    let count = 3;
+    while(0 < count) {
+        counter.innerText = count--;
+        await new Promise(resolve=>setTimeout(resolve, 1000));
+    }
+    scene.notice.style.display = "none";
+    counter.remove();
+}
+
+function showResult(result) {
+    console.log(result)
+    scene.notice.style.display = "flex";
+    const resultElement = document.createElement("div");
+    resultElement.id = "result";
+    const result_text = [];
+    result_text.push(`<span>Lap time:</span>`);
+    result_text.push(`<span>${result.map(v=>v+'ms').join(` `)}</span>`);
+    const SUM = result.reduce((acc,cur)=>acc+cur)
+    result_text.push(`<span>Average: ${SUM/result.length}ms</span>`);
+    resultElement.innerHTML = result_text.join(``);
+    const input_finish = document.createElement("button");
+    input_finish.textContent = 'Back to title';
+    input_finish.onclick = ()=>{
+        finishTest();
+        resultElement.remove();
+    }
+    resultElement.appendChild(input_finish);
+    scene.notice.appendChild(resultElement);
+}
+
+function finishTest() {
+    scene.notice.style.display = "none";
+    scene.start.style.display = "flex";
+}
+
+})();
+</script>
+</html>
