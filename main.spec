@@ -20,6 +20,7 @@ a = Analysis(
     noarchive=False,
 )
 a.datas += [('.\\Assets\\favicon.ico', '.\\Assets\\favicon.ico', 'DATA'),
+            ('.\\config.txt', '.\\config.txt', 'DATA'),
             ('.\\Assets\\question.png', '.\\Assets\\question.png', 'DATA'),
             ('.\\Assets\\switch.png', '.\\Assets\\switch.png', 'DATA'),
             ('.\\Assets\\calibration.png','.\\Assets\\calibration.png', 'DATA'),
@@ -34,7 +35,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='AirMousePointer 0.0.1α',
+    name='AirMousePointer 0.0.3α',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
