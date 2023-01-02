@@ -36,6 +36,7 @@ class Vector2D:
             self.x = value
         elif dir == 'y':
             self.y = value
+        return self
 
 
     def parseArray(self) -> ndarray:
@@ -89,7 +90,7 @@ class Vector3D:
         self.z = z
 
     def __repr__(self):
-        return f"x: {self.x}, y: {self.y}, z: {self.y}"
+        return f"x: {self.x}, y: {self.y}, z: {self.z}"
 
     def get(self, dir: str) -> float:
         if dir == 'x':
@@ -108,6 +109,7 @@ class Vector3D:
             self.y = value
         elif dir == 'z':
             self.z = value
+        return self
 
 
     def parseArray(self) -> ndarray:
@@ -166,99 +168,7 @@ def calcDotProduct(vector_0: Union[Vector3D, Vector2D], vector_1: Union[Vector3D
     deg = np.rad2deg(np.arccos(c))
     return deg
 
-def Average3D(array: ndarray):
-    length = len(array)
-    result = Vector3D(x=0, y=0, z=0)
-    for vector in array:
-        vector = Vector3D.fromVector(vector)
-        result = result.addition(vector.division(length))
-    return result
-
-def Average2D(array: ndarray):
-    length = len(array)
-    result = Vector2D(x=0, y=0)
-    for vector in array:
-        vector = Vector2D.fromVector(vector)
-        result = result.addition(vector.division(length))
-    return result
-
-def calcAngle(a, b, scale=Vector3D(x=1, y=1, z=1)):
-    return Vector2D(
-        x=np.sign(b.x - a.x) * calcDotProduct(Vector2D(x=(b.z-a.z)*scale.z, y=(b.y-a.y)*scale.y), Vector2D(x=1, y=0)),
-        y=np.sign(b.y - a.y) * calcDotProduct(Vector2D(x=(b.z-a.z)*scale.z, y=(b.x-a.x)*scale.x), Vector2D(x=1, y=0))
-    )
-
-class Smoothing3D:
-    def __init__(self, max, outliers=1, delay=10):
-        self.outliers = outliers
-        self.min = 1 + outliers*2
-        self.max = self.min if max <= self.min else max
-        self.vector = np.empty((0,3))
-        self.delay = delay
-
-    def update(self, vector):
-        self.vector = np.append(self.vector, np.array([[vector.x, vector.y, vector.z]]), axis=0)
-        if(len(self.vector) > self.max):
-            self.vector = np.delete(self.vector, 0, axis=0)
-
-    def get(self):
-        if(len(self.vector) <= self.min):
-            if(len(self.vector) == 0):
-                return Vector3D({
-                    'x': 0,
-                    'y': 0,
-                    'z': 0,
-                })
-            return Vector3D({
-                'x': self.vector[-1][0],
-                'y': self.vector[-1][1],
-                'z': self.vector[-1][2],
-            })
-        basis = self.vector[-1]
-        #print(basis)
-        vector = np.empty((0,3))
-        for i in range(len(self.vector)):
-            v = np.array([[
-                (self.vector[i][0] - basis[0]) * (i+self.delay) / (len(self.vector)+self.delay),
-                (self.vector[i][1] - basis[1]) * (i+self.delay) / (len(self.vector)+self.delay),
-                (self.vector[i][2] - basis[2]) * (i+self.delay) / (len(self.vector)+self.delay),
-            ]])
-            #print(v)
-            vector = np.append(vector, v, axis=0)
-        #print(vector)
-        sort_array = np.sort(vector, axis=0)[self.outliers:-self.outliers, :] if self.outliers != 0 else vector
-        average = np.average(sort_array, axis=0)
-        #average = np.average(vector, axis=0)
-        #print(average)
-        #average = np.average(self.vector, axis=0)
-        return Vector3D(
-            x=average[0] + basis[0],
-            y=average[1] + basis[1],
-            z=average[2] + basis[2],
-        )
-
-class Smoothing2D:
-    def __init__(self, max):
-        self.max = max
-        self.vector = np.empty((0,2))
-
-    def update(self, vector):
-        self.vector = np.append(self.vector, np.array([[vector.x, vector.y]]), axis=0)
-        over_vector = int((len(self.vector) - self.max)/2+1)
-        if over_vector > 0:
-            for i in range(over_vector):
-                self.vector = np.delete(self.vector, 0, axis=0)
-
-    def get(self):
-        if(len(self.vector) <= 0):
-            return None
-        average = np.average(self.vector, axis=0)
-        return Vector2D(
-            x=average[0],
-            y=average[1],
-        )
-
-def calcCornerVector(p, o, v):
+def calcCornerVector(p: Vector3D, o: Vector3D, v: Vector3D) -> Vector3D:
     A = np.square(v.x) + np.square(v.y) + np.square(v.z)
     B = (o.x-p.x)*v.x + (o.y-p.y)*v.y + (o.z-p.z)*v.z
     t = -B / (1e-10 if A == 0 else A)
